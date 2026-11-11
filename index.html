@@ -592,7 +592,7 @@ const LIBRARY = [
     [1,'You’re here. That’s already a good step.'],[12,'Put one hand on your chest, if you like.'],[24,'Breathe in for four. And out for six, slower than the breath in.'],
     [50,'Anxiety is like weather. It is real, and it passes.'],[85,'Name five things you can see around you. Slowly.'],[125,'Now four things you can hear. The rain. Your breath.'],
     [170,'Breathe in for four. And out for six.'],[215,'You don’t have to solve anything right now.'],[255,'Just this breath. And then the next one.'],[288,'When you’re ready, open your eyes. You did well.']]},
-  {id:'g-grief', type:'listen', th:['grief'], min:5, t:'A lamp for someone you miss', by:'Guided · grief and loss', mode:'silence', sound:'tone', script:[
+  {id:'g-grief', type:'listen', th:['grief'], min:5, t:'A light for someone you miss', by:'Guided · grief and loss', mode:'silence', sound:'tone', script:[
     [1,'This time is for someone you miss.'],[14,'Let their face come to you. Or their voice. Or just their name.'],[40,'You don’t need to feel any particular way. Whatever comes is welcome.'],
     [80,'Imagine lighting a small lamp for them.'],[110,'Notice its warm light. It doesn’t need anything from you.'],[150,'If there is something you never said, you can say it now, quietly.'],
     [200,'Love doesn’t end when someone is gone. It changes its shape.'],[245,'Let the lamp keep burning. You can come back to it any time.'],[288,'Slowly, come back. Be gentle with yourself today.']]},
@@ -615,7 +615,7 @@ const LIBRARY = [
 /* ---------- state ---------- */
 const KEY = 'vowway_v6';
 function fresh(){
-  return {profile:null, src:'all', modePref:'auto', scene:'lake', qoff:0, journey:{start:TODAY(), done:{}}, intentions:{}, reflections:[], released:[], practices:[], silence:[], deeds:[], lamps:[], letterSeen:''};
+  return {profile:null, src:'all', modePref:'auto', scene:'meadow', qoff:0, journey:{start:TODAY(), done:{}}, intentions:{}, reflections:[], released:[], practices:[], silence:[], deeds:[], lamps:[], letterSeen:''};
 }
 function seed(){
   const t = TODAY(), s = fresh();
@@ -691,7 +691,17 @@ function sceneSVG(kind, ph, id='s'){
   <rect width="400" height="${H + 2}" fill="url(#${id}sk)"/>
   <g class="orb"><circle cx="${c.ox}" cy="${c.oy}" r="${c.or * 5}" fill="url(#${id}og)"/><circle cx="${c.ox}" cy="${c.oy}" r="${c.or}" fill="${c.orb}"/>
   ${ph === 'night' ? `<circle cx="${c.ox + 7}" cy="${c.oy - 5}" r="${c.or}" fill="${c.s1}"/>` : ''}</g>`;
-  if (kind === 'lake') {
+  if (kind === 'meadow') {
+    const hl = {dawn:['#8B87AC','#646A90','#424B6E','#2E3654'], day:['#93A9BE','#6F8A9C','#4F6B78','#3A5260'], dusk:['#7E5D86','#5A426C','#3A2C50','#271E3A'], night:['#24305A','#19224A','#111834','#0B1024']}[ph];
+    const tree = (x, y, sc) => `<g transform="translate(${x} ${y}) scale(${sc})"><rect x="-1.5" y="-4" width="3" height="10" fill="${hl[1]}"/><circle cx="0" cy="-14" r="11" fill="${hl[1]}"/><circle cx="-7" cy="-8" r="8" fill="${hl[1]}"/><circle cx="7" cy="-8" r="8" fill="${hl[1]}"/></g>`;
+    let blades = ''; for (let i = 0; i < 70; i++) { const x = i * 5.8 + (i * 37 % 5), y = 690 - 30 * Math.sin(i / 70 * Math.PI) + (i * 13 % 7), h = 9 + (i * 17 % 12), lean = ((i * 29 % 9) - 4); blades += `<path d="M${x.toFixed(1)} ${y.toFixed(1)} q${(lean / 2).toFixed(1)} ${-h / 2} ${lean} ${-h}" stroke="${hl[3]}" stroke-width="1.6" stroke-linecap="round" fill="none"/>`; }
+    g += `<rect y="${H - 40}" width="400" height="70" fill="url(#${id}mi)"/>
+      <path d="M0 512 C 70 478, 150 484, 220 500 C 290 516, 340 474, 400 482 L400 800 L0 800 Z" fill="${hl[0]}"/>
+      ${[[28,503,.9],[46,499,.7],[62,497,.8],[300,490,.8],[318,484,1],[338,481,.75],[372,482,.9]].map(([x,y,sc]) => tree(x, y, sc)).join('')}
+      <path d="M0 598 C 90 548, 210 560, 290 582 C 340 596, 375 572, 400 566 L400 800 L0 800 Z" fill="${hl[1]}"/>
+      <path d="M0 700 C 110 650, 250 668, 400 640 L400 800 L0 800 Z" fill="${hl[2]}"/>
+      <path d="M0 760 C 140 724, 280 742, 400 718 L400 800 L0 800 Z" fill="${hl[3]}"/>${blades}`;
+  } else if (kind === 'lake') {
     g += `${mtns}<rect y="${H}" width="400" height="${800 - H}" fill="url(#${id}wt)"/>
       <g transform="translate(0 ${2 * H}) scale(1 -1)" opacity=".3">${mtns}</g>
       ${[0,1,2,3,4,5].map(i => `<rect x="${40 + i * 55}" y="${H + 26 + i * 40}" width="${70 - i * 6}" height="1.2" fill="#fff" opacity=".12"/>`).join('')}
@@ -712,7 +722,7 @@ function sceneSVG(kind, ph, id='s'){
   return `<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
 }
 let sceneKey = '';
-function drawScene(){ const k = (S.scene || 'lake') + curPhase(); if (k === sceneKey) return; sceneKey = k; document.getElementById('scene').innerHTML = sceneSVG(S.scene || 'lake', curPhase()); }
+function drawScene(){ if (!S.sceneV2) { if (!S.scene || S.scene === 'lake') S.scene = 'meadow'; S.sceneV2 = 1; } const k = (S.scene || 'lake') + curPhase(); if (k === sceneKey) return; sceneKey = k; document.getElementById('scene').innerHTML = sceneSVG(S.scene || 'lake', curPhase()); }
 function activeDays(){
   const A = new Set([...Object.keys(S.intentions), ...S.released, ...S.deeds, ...Object.values(S.journey.done)]);
   S.reflections.forEach(r => A.add(r.date)); S.silence.forEach(s => A.add(s.date));
@@ -911,7 +921,7 @@ function practiceCard(p){
 function nowCard(){
   const t = TODAY(), h = HOUR(), night = isNight(), d = today(), s = station();
   if (s && s.justFinished) return `<section class="card now"><p class="eyebrow go">First steps complete</p>
-    <h2>Tomorrow the path begins</h2><p class="small" style="font-size:14px">It has no end. It moves through twelve stations, and each time around it goes a little deeper. Your first station: ${STATIONS[startStation()].n}.</p></section>`;
+    <h2>Tomorrow the path begins</h2><p class="small" style="font-size:14px">It has no end. Each week brings a new theme for your evening questions. The first one: ${STATIONS[startStation()].n}.</p></section>`;
   if (letterDue()) return `<section class="card now"><p class="eyebrow go">A letter for you</p>
     <h2>Your week, in a few lines</h2><p class="small" style="font-size:14px">What you did, what you felt, and what comes next.</p>
     <button class="btn glow wide" data-act="openLetter">Read it</button></section>`;
@@ -1050,7 +1060,7 @@ function waveLine(){
 }
 function lampsForCard(){
   const t = TODAY(), mine = S.lamps.filter(l => l.date === t);
-  return `<section class="card" id="lampcard"><p class="eyebrow">A lamp for someone</p>
+  return `<section class="card" id="lampcard"><p class="eyebrow">A light for someone</p>
     <h3>Send a little light</h3>
     <p class="small">Think of someone and wish them well. A lamp is a quiet way of saying: I’m with you. Their name stays on this device.</p>
     ${mine.length ? `<div class="lit">${mine.map(l => `<span>${esc(l.for)}</span>`).join('')}</div>` : ''}
@@ -1145,26 +1155,21 @@ function sheetNewVow(){
 }
 let pathView = 'path';
 function viewPath(){
-  const j = journey(), s = station(), off = startStation(), Ln = STATIONS.length;
+  const j = journey();
   const active = S.practices.filter(p => !pDone(p)), past = S.practices.filter(pDone);
   const firstSteps = `<section class="card"><p class="eyebrow">First steps</p>
     <div>${STEPS.map((st,i) => { const n = i+1, d = S.journey.done[n];
       const cls = d ? 'done' : (j.phase === 'first' && j.n === n ? 'now' : 'later');
       return `<div class="stone ${cls}"><span class="mk">${d ? ICON.check : n}</span><div><h3>${esc(st.t)}</h3>${cls === 'now' ? `<p class="small">${esc(st.d)}</p>` : ''}</div></div>`; }).join('')}</div>
-    <p class="small">After these seven steps, your path begins: twelve weekly themes that return, each time a little deeper.</p></section>`;
-  const order = Array.from({length:Ln}, (_,k) => (k + off) % Ln);
-  const ring = s ? `<section class="card"><div class="ptop"><p class="eyebrow">Circle ${s.round}</p><span class="dayno">${s.justFinished ? 'Begins tomorrow' : `${esc(s.st.n)} · day ${s.day} of 7`}</span></div>
-    <div class="ring">${order.map((k,pos) => `<div class="st ${!s.justFinished && pos < s.pos ? 'past' : (!s.justFinished && pos === s.pos ? 'now' : '')}">${esc(STATIONS[k].n)}</div>`).join('')}</div>
-    <p class="small">After all twelve, the circle begins again with ${STATIONS[off].n}, with deeper questions.</p></section>` : '';
-  const tabs = `<div class="seg two" role="tablist">${[['path','Your path'],['vows','Your vows' + (active.length ? ` · ${active.length}` : '')]].map(([k,l]) => `<button data-act="pathView" data-k="${k}" aria-pressed="${pathView===k}">${l}</button>`).join('')}</div>`;
-  const pathPart = `${lampCard()}${j.phase === 'first' ? firstSteps : ring}`;
-  const vowsPart = `${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p></section>`}
-    <button class="btn glow wide" data-act="newVow">+ New vow</button>
-    ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}`;
+    <p class="small">After these seven steps, each week brings a new theme for your evening questions.</p></section>`;
   return `<div class="stack">
-    <section class="greet"><h1>The path</h1><p class="lede">${pathView === 'path' ? 'Each week your journal has a theme. The path has no end.' : 'Small promises, kept one day at a time.'}</p></section>
-    ${tabs}
-    ${pathView === 'path' ? pathPart : vowsPart}
+    <section class="greet"><h1>Your path</h1><p class="lede">A lantern that fills, and small promises you keep.</p></section>
+    ${lampCard()}
+    ${j.phase === 'first' ? firstSteps : ''}
+    <p class="opt-label" style="margin:10px 2px 0">Your vows</p>
+    ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p></section>`}
+    <button class="btn glow wide" data-act="newVow">+ New vow</button>
+    ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}
   </div>`;
 }
 
@@ -1424,7 +1429,7 @@ function sheetLetter(){
     <div class="letter"><p>Dear ${esc(name)},</p>${weekLetter().map(l => `<p>${esc(l)}</p>`).join('')}<p class="sig">With you on the path,<br>vowway</p></div>
     <button class="btn primary wide" data-act="closeSheet">Close</button></div>`, 'sl-t');
 }
-const SCENES = [['lake','Mountain lake'],['sea','Open sea'],['dunes','Desert dunes']];
+const SCENES = [['meadow','Firefly meadow'],['lake','Mountain lake'],['sea','Open sea'],['dunes','Desert dunes']];
 function sheetSettings(){
   return sheetWrap(`<div class="stack">
       <h2 id="st-t">Settings</h2>
@@ -1548,7 +1553,7 @@ function renderFlow(){
       if (step === 'done') { title = 'You’re set for today'; text = 'Come back this evening to close your day.'; }
       else if (flow.kind === 'evening') { title = 'Your day is closed'; text = 'A new light in your lantern. Rest well; tomorrow the path goes on.'; }
       else if (jj.phase === 'first') { title = 'A firefly for your lantern'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow: ${jj.step.t}.`; }
-      else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the real path begins. It has no end, only stations, and each time around it goes deeper.'; }
+      else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the path begins. Each week, a new theme for your evenings; your lantern keeps filling.'; }
       else { title = 'A firefly for your lantern'; text = 'That’s all for now. Come back this evening to close your day.'; }
       body = `<div class="grow"></div><div class="stonebox">${lanternSVG(lantern().fill, lantern().size, 1, 'fl', 'new')}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
@@ -1719,7 +1724,7 @@ function setSil(mode, mins, sound){ sil.custom = null; sil.mode = mode; sil.tota
 
 /* night sky: a few slow stars in evening light */
 (function stars(){
-  const cv = document.getElementById('stars'), x = cv.getContext('2d'); let pts = [], gold = [];
+  const cv = document.getElementById('stars'), x = cv.getContext('2d'); let pts = [], gold = [], flies = [];
   const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function size(){ const r = window.devicePixelRatio || 1; cv.width = innerWidth * r; cv.height = innerHeight * r;
     pts = Array.from({length:70}, () => ({x:Math.random(), y:Math.random()*.75, r:(Math.random()*1.1 + .3) * r, p:Math.random()*6.28})); }
@@ -1729,6 +1734,16 @@ function setSil(mode, mins, sound){ sil.custom = null; sil.mode = mode; sil.tota
       gold = Array.from({length:nf}, () => ({x:rnd(), y:rnd()*.6, r:(rnd()*.9 + .9) * r, p:rnd()*6.28})); }
     if (document.documentElement.dataset.phase === 'night') gold.forEach(s => { const a = .45 + .45*(still ? .6 : (Math.sin(ts/1300 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,214,140,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
+    const ph = document.documentElement.dataset.phase;
+    if ((ph === 'night' || ph === 'dusk') && typeof S !== 'undefined' && S.scene === 'meadow') {
+      if (!flies.length) { let sd = 11; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647; flies = Array.from({length:24}, () => ({x:rn(), y:.62 + rn() * .34, a:rn() * 6.28, b:rn() * 6.28, s:.4 + rn() * .6})); }
+      const r = window.devicePixelRatio || 1, t = still ? 0 : ts / 1000;
+      flies.forEach(f => { const fx = (f.x + .025 * Math.sin(t * .23 * f.s + f.a)) * cv.width, fy = (f.y + .018 * Math.sin(t * .31 * f.s + f.b)) * cv.height;
+        const on = Math.max(0, Math.sin(t * .9 * f.s + f.a * 3)); if (on < .05) return;
+        const gr = x.createRadialGradient(fx, fy, 0, fx, fy, 9 * r); gr.addColorStop(0, `rgba(255,214,120,${(.55 * on).toFixed(2)})`); gr.addColorStop(1, 'rgba(255,214,120,0)');
+        x.fillStyle = gr; x.beginPath(); x.arc(fx, fy, 9 * r, 0, 6.283); x.fill();
+        x.fillStyle = `rgba(255,248,220,${(.9 * on).toFixed(2)})`; x.beginPath(); x.arc(fx, fy, 1.4 * r, 0, 6.283); x.fill(); });
+    }
     if (document.documentElement.dataset.phase === 'night') pts.forEach(s => { const a = .2 + .4*(still ? .6 : (Math.sin(ts/1700 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,248,232,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     if (!still) requestAnimationFrame(draw); }
