@@ -657,7 +657,6 @@ function sceneSVG(kind, ph, id='s'){
   if (kind === 'lake') {
     g += `${mtns}<rect y="${H}" width="400" height="${800 - H}" fill="url(#${id}wt)"/>
       <g transform="translate(0 ${2 * H}) scale(1 -1)" opacity=".3">${mtns}</g>
-      ${c.oy < 300 ? `<ellipse cx="${c.ox}" cy="${Math.min(790, 2 * H - c.oy)}" rx="${c.or * 1.4}" ry="${c.or * .35}" fill="${c.orb}" opacity=".3"/>` : ''}
       ${[0,1,2,3,4,5].map(i => `<rect x="${40 + i * 55}" y="${H + 26 + i * 40}" width="${70 - i * 6}" height="1.2" fill="#fff" opacity=".12"/>`).join('')}
       <rect y="${H - 50}" width="400" height="90" fill="url(#${id}mi)"/>`;
   } else if (kind === 'sea') {
