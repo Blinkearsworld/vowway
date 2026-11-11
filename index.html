@@ -329,7 +329,9 @@ body.flowing .app{visibility:hidden}
 .fl .burn{font-family:var(--display);font-style:italic;font-size:22px;text-align:center;animation:fade 1s}
 
 /* nav */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.nav button{position:relative}
+.nav .new::after{content:"";position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:var(--lamp-glow)}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:8px 4px calc(10px + env(safe-area-inset-bottom));z-index:20}
 .nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding:6px 0}
 .nav svg{width:22px;height:22px}
 .nav button[aria-current="page"]{color:var(--ink)}
@@ -491,7 +493,7 @@ const FORYOU = {
   loss:      {t:'For the one you miss', d:'Light a lamp for them. A name is enough, or just a memory.', b:'Light a lamp', act:'goLamp'},
   anxiety:   {t:'When it gets loud inside', d:'Three minutes of breathing. A calm voice will lead you.', b:'Breathe for 3 minutes', act:'goGuided3'},
   meaning:   {t:'A question to carry today', d:'What makes tomorrow worth getting up for?', b:'Write about it', act:'openRefl'},
-  discipline:{t:'Start small, then keep it', d:'A three-day vow is the best first step. Small enough to keep.', b:'Choose a vow', act:'goPath'},
+  discipline:{t:'Start small, then keep it', d:'A three-day vow is the best first step. Small enough to keep.', b:'Choose a vow', act:'goVows'},
   guilt:     {t:'You are more than your worst moment', d:'Write what weighs on you, then let it go. Nothing is saved.', b:'Write and let go', act:'openRefl'},
   lonely:    {t:'You’re not alone in this', d:'At every moment, someone somewhere on earth is pausing with you.', b:'See who’s here', act:'goTogether'},
   curious:   {t:'Look a little further', d:'Read a thought from a tradition you don’t know yet.', b:'Show me one', act:'nextQuote'}
@@ -777,13 +779,14 @@ function intentUI(){
 function stepCard(j){
   const bar = `<div class="stepno">${STEPS.map((_,i) => `<span class="${S.journey.done[i+1] ? 'on' : ''}"></span>`).join('')}</div>`;
   if (!j.avail) return `<section class="card">${bar}
-      <div class="done-line"><span class="tick">${ICON.check}</span><div><h2>Today’s step is taken</h2><p class="small">Tomorrow: ${esc(j.step.t)}. That’s all for today.</p></div></div></section>`;
+      <div class="done-line"><span class="tick">${ICON.check}</span><div><h2>Today’s step is taken</h2><p class="small">Tomorrow: ${esc(j.step.t)}. That’s all for today.</p></div></div>
+      ${S.reminderSet ? '' : '<button class="link" data-act="openReminder">Want a gentle reminder tomorrow? ›</button>'}</section>`;
   const s = j.step; let action = '';
   if (s.type === 'intent') action = intentUI();
   if (s.type === 'silence') action = `<button class="btn glow wide" data-act="goSilence1">Begin one minute</button>`;
   if (s.type === 'reflect') action = `<button class="btn glow wide" data-act="openRefl">Open the question</button>`;
   if (s.type === 'text') action = `<textarea id="grat" placeholder="${esc(s.ph || 'Write here…')}"></textarea><button class="btn glow wide" data-act="saveGrat">Keep it</button>`;
-    if (s.type === 'practice') action = `<button class="btn glow wide" data-act="goPath">Choose a vow</button>`;
+    if (s.type === 'practice') action = `<button class="btn glow wide" data-act="goVows">Choose a vow</button>`;
   if (s.type === 'review') action = `<button class="btn glow wide" data-act="review">Read your first letter</button>`;
   return `<section class="card now">${bar}<p class="eyebrow go">Your next step · ${j.n} of 7</p>
     <h2>${esc(s.t)}</h2><p class="small" style="font-size:14px">${esc(s.d)}</p>${action}</section>`;
@@ -846,7 +849,7 @@ function nowCard(){
       <button class="btn glow wide" data-act="check" data-id="${d.vow.id}">I kept it today</button>${(d.vow.kind === 'quit') ? `<button class="link" data-act="slip" data-id="${d.vow.id}" style="color:var(--muted)">I slipped today</button>` : ''}${wk}</section>`;
     if (!d.vow) return `<section class="card now"><p class="eyebrow go">Start small</p>
       <h2>Make a promise you can keep</h2><p class="small" style="font-size:14px">Three days is enough to begin. Small promises, kept, change who we are.</p>
-      <button class="btn glow wide" data-act="goPath">Choose a vow</button>${wk}</section>`; }
+      <button class="btn glow wide" data-act="goVows">Choose a vow</button>${wk}</section>`; }
   if (need() === 'meaning') { const reads = LIBRARY.filter(i => i.type === 'read'), f = reads[Math.floor(fromKey(TODAY()) / 864e5) % reads.length];
     return `<section class="card now"><p class="eyebrow go">Today’s reading · ${esc(f.min)} min</p>
       <h2>${esc(f.t)}</h2><p class="small">${esc(f.by)}</p><p class="station-q" style="font-size:17px">${esc(f.text.split('\n')[0])}</p>
@@ -926,7 +929,7 @@ function viewToday(){
   const first = j.phase === 'first';
   return `<div class="stack">
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
-      <button class="pill" data-act="goPath">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
+      <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
     ${first ? stepCard(j) : nowCard()}
     ${!first || S.journey.done[1] ? pageCard() : ''}
     ${first ? '' : forYouCard()}
@@ -1013,35 +1016,60 @@ function vowForm(){
     <p class="err" id="cerr" hidden>First, write what you’re promising yourself.</p>
     <button class="btn primary wide" data-act="startCustom">Make this vow</button></div>`;
 }
+const APP_URL = 'https://blinkearsworld.github.io/vowway/';
+function remTime(){ const el = document.getElementById('remtime'); if (el && el.value) S.reminderTime = el.value;
+  return S.reminderTime || ({morning:'08:00', day:'13:00', evening:'21:00', night:'22:30', both:'21:00'}[(S.profile || {}).time] || '21:00'); }
+function remStamp(tm, plus = 0){ const d = new Date(); const [h, m] = tm.split(':').map(Number); d.setHours(h, m + plus, 0, 0);
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`; }
+function icsText(tm){
+  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//vowway//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT', `UID:vowway-daily-${Date.now()}@vowway`, `DTSTAMP:${now}`,
+    `DTSTART:${remStamp(tm)}`, 'DURATION:PT10M', 'RRULE:FREQ=DAILY', 'SUMMARY:vowway · a few quiet minutes', `DESCRIPTION:Open vowway: ${APP_URL}`, `URL:${APP_URL}`,
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:vowway','TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+function googleCalUrl(tm){
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone, e = encodeURIComponent;
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${e('vowway · a few quiet minutes')}&details=${e('Open vowway: ' + APP_URL)}&dates=${remStamp(tm)}/${remStamp(tm, 10)}&recur=${e('RRULE:FREQ=DAILY')}&ctz=${e(tz)}`;
+}
+function reminderBlock(){
+  const tm = remTime(), inClaude = /claude\.ai|claudeusercontent/.test(location.host);
+  return `<div class="stack" style="gap:10px"><p class="small">A gentle nudge once a day, at a time that suits you. It goes into your own calendar; vowway never sends you anything.</p>
+    <div class="row" style="align-items:center"><span class="small" style="flex:1">Remind me at</span><input type="time" id="remtime" value="${tm}" style="background:var(--field);border:1px solid var(--line);border-radius:14px;padding:9px 12px;color:var(--ink)"></div>
+    <button class="btn glow wide" data-act="remIcs">Add to iPhone calendar</button>
+    <a class="btn ghost wide" style="text-align:center;text-decoration:none;display:block" href="${googleCalUrl(tm)}" target="_blank" rel="noopener" id="gcal">Add to Google Calendar</a>
+    ${S.reminderSet ? `<p class="small">Last added for ${esc(S.reminderSet)}. To change it, edit or delete the event in your calendar.</p>` : ''}
+    ${inClaude ? '<p class="small">Works in the installed app; this preview can’t open calendar files.</p>' : ''}</div>`;
+}
+function sheetReminder(){ return sheetWrap(`<div class="stack"><h2 id="rm-t">A daily reminder</h2>${reminderBlock()}<button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'rm-t'); }
+function sheetNewVow(){
+  return sheetWrap(`<div class="stack"><h2 id="nv-t">A new vow</h2>
+    <div><p class="opt-label">Start with one of these</p>
+      ${LIB.map((l,i) => `<div class="libitem"><div><h3>${esc(l.t)}</h3><p class="small">${l.d} days</p></div><button class="btn ghost" data-act="startLib" data-i="${i}">Begin</button></div>`).join('')}</div>
+    <div><p class="opt-label">Or write your own</p>${vowForm()}</div>
+    <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'nv-t');
+}
+let pathView = 'path';
 function viewPath(){
-  const j = journey(), s = station(), L = lampState(), off = startStation(), Ln = STATIONS.length;
+  const j = journey(), s = station(), off = startStation(), Ln = STATIONS.length;
   const active = S.practices.filter(p => !pDone(p)), past = S.practices.filter(pDone);
   const firstSteps = `<section class="card"><p class="eyebrow">First steps</p>
     <div>${STEPS.map((st,i) => { const n = i+1, d = S.journey.done[n];
       const cls = d ? 'done' : (j.phase === 'first' && j.n === n ? 'now' : 'later');
-      return `<div class="stone ${cls}"><span class="mk">${d ? ICON.check : n}</span><div><h3>${esc(st.t)}</h3>${cls === 'now' ? `<p class="small">${esc(st.d)}</p>` : ''}</div></div>`; }).join('')}</div></section>`;
+      return `<div class="stone ${cls}"><span class="mk">${d ? ICON.check : n}</span><div><h3>${esc(st.t)}</h3>${cls === 'now' ? `<p class="small">${esc(st.d)}</p>` : ''}</div></div>`; }).join('')}</div>
+    <p class="small">After these seven steps, your path begins: twelve weekly themes that return, each time a little deeper.</p></section>`;
   const order = Array.from({length:Ln}, (_,k) => (k + off) % Ln);
   const ring = s ? `<section class="card"><div class="ptop"><p class="eyebrow">Circle ${s.round}</p><span class="dayno">${s.justFinished ? 'Begins tomorrow' : `${esc(s.st.n)} · day ${s.day} of 7`}</span></div>
     <div class="ring">${order.map((k,pos) => `<div class="st ${!s.justFinished && pos < s.pos ? 'past' : (!s.justFinished && pos === s.pos ? 'now' : '')}">${esc(STATIONS[k].n)}</div>`).join('')}</div>
-    <p class="small">After all twelve, the circle begins again with ${STATIONS[off].n}, with deeper questions.</p></section>` :
-    `<section class="card quiet"><p class="eyebrow">After your first steps</p><h3>Twelve stations, an endless circle</h3>
-    <div class="ring">${order.map(k => `<div class="st">${esc(STATIONS[k].n)}</div>`).join('')}</div>
-    <p class="small">Seven days at each station. Your path starts with ${STATIONS[off].n}, chosen from what brought you here.</p></section>`;
-  const miles = `<section class="card"><p class="eyebrow">Markers on the path</p>
-    <div class="miles">${MILES.map(m => `<div class="mile ${L.total >= m ? 'on' : ''}"><b></b>${m} days</div>`).join('')}</div>
-    <p class="small">Not finish lines. Stones by the road, to show how far you’ve come.</p></section>`;
+    <p class="small">After all twelve, the circle begins again with ${STATIONS[off].n}, with deeper questions.</p></section>` : '';
+  const tabs = `<div class="seg two" role="tablist">${[['path','Your path'],['vows','Your vows' + (active.length ? ` · ${active.length}` : '')]].map(([k,l]) => `<button data-act="pathView" data-k="${k}" aria-pressed="${pathView===k}">${l}</button>`).join('')}</div>`;
+  const pathPart = `${lampCard()}${j.phase === 'first' ? firstSteps : ring}`;
+  const vowsPart = `${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p></section>`}
+    <button class="btn glow wide" data-act="newVow">+ New vow</button>
+    ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}`;
   return `<div class="stack">
-    <section class="greet"><h1>The path</h1><p class="lede">Each week your journal has a theme. After all twelve, they return with deeper questions. The path has no end.</p></section>
-    ${lampCard()}
-    ${j.phase === 'first' ? firstSteps + ring : ring + miles}
-    <div class="section-h"><h2>Vows</h2></div>
-    ${active.map(practiceCard).join('') || '<p class="small">No active vow yet. Start small.</p>'}
-    <section class="card"><p class="eyebrow">A new vow</p>
-      <div>${LIB.map((l,i) => `<div class="libitem"><div><h3>${esc(l.t)}</h3><p class="small">${l.d} days</p></div><button class="btn ghost" data-act="startLib" data-i="${i}">Begin</button></div>`).join('')}</div>
-      <p class="eyebrow" style="margin-top:6px">Or your own</p>
-      ${vowForm()}</section>
-    ${j.phase === 'first' ? miles : ''}
-    ${past.length ? `<div class="section-h"><h2>Kept vows</h2></div>${past.map(practiceCard).join('')}` : ''}
+    <section class="greet"><h1>The path</h1><p class="lede">${pathView === 'path' ? 'Each week your journal has a theme. The path has no end.' : 'Small promises, kept one day at a time.'}</p></section>
+    ${tabs}
+    ${pathView === 'path' ? pathPart : vowsPart}
   </div>`;
 }
 
@@ -1194,9 +1222,17 @@ function viewOnboarding(){
   return `<div class="ob">${prog}${body}<div class="grow"></div><div class="ob-foot">${foot}${back}</div></div>`;
 }
 
+/* new people see three tabs; Library opens after the second step, Path after the fourth */
+function unlocked(id){
+  const j = journey(), d = S.journey.done;
+  if (id === 'library') return j.phase === 'path' || !!d[2];
+  if (id === 'path') return j.phase === 'path' || !!d[4];
+  return true;
+}
 function nav(){
-  const items = [['today','Today'],['journal','Journal'],['silence','Calm'],['library','Library'],['path','Path']];
-  return `<nav class="nav" aria-label="Main">${items.map(([id,l]) => `<button data-act="tab" data-tab="${id}" ${tab===id ? 'aria-current="page"' : ''}>${ICON[id]}<span>${l}</span></button>`).join('')}</nav>`;
+  const items = [['today','Today'],['journal','Journal'],['silence','Calm'],['library','Library'],['path','Path']].filter(([id]) => unlocked(id));
+  const seen = S.seenTabs || [];
+  return `<nav class="nav" aria-label="Main" style="--tabs:${items.length}">${items.map(([id,l]) => `<button data-act="tab" data-tab="${id}" class="${['library','path'].includes(id) && !seen.includes(id) ? 'new' : ''}" ${tab===id ? 'aria-current="page"' : ''}>${ICON[id]}<span>${l}</span></button>`).join('')}</nav>`;
 }
 function header(){
   return `<header class="top"><div class="mark">vow<i>·</i>way</div>
@@ -1241,6 +1277,7 @@ function sheetSettings(){
       <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">Where today’s thought comes from. By default, every source equally.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
       <div><p class="opt-label">Privacy</p>
         ${pinKey ? `<div class="row"><span class="small" style="flex:1;align-self:center">Your journal is encrypted with a passcode.</span><button class="btn ghost" data-act="pinOff">Turn off</button></div>`
           : `<p class="small" style="margin-bottom:8px">Add a passcode to encrypt your journal on this device. If you forget it, the journal can’t be recovered.</p>
@@ -1321,7 +1358,7 @@ function renderFlow(){
       foot = `<button class="btn glow wide" data-act="flowDeed">I did it</button><button class="fl-skip" data-act="flowClose">Later today</button>`;
       break;
     case 'firststep': {
-      const t = j.step.type, btn = t === 'silence' ? ['goSilence1','Begin one minute'] : t === 'practice' ? ['goPath','Choose a vow'] : ['review','Read your first letter'];
+      const t = j.step.type, btn = t === 'silence' ? ['goSilence1','Begin one minute'] : t === 'practice' ? ['goVows','Choose a vow'] : ['review','Read your first letter'];
       body = `<p class="eyebrow go">First steps · ${j.n} of 7</p><h1>${esc(j.step.t)}</h1><p class="lede">${esc(j.step.d)}</p><div class="grow"></div>`;
       foot = `<button class="btn glow wide" data-act="${btn[0]}">${btn[1]}</button>`;
       break; }
@@ -1377,7 +1414,7 @@ function render(){
   app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
   renderSheet();
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, reminder:sheetReminder}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -1390,7 +1427,7 @@ function sheetPlayer(){
     <button class="btn primary wide" data-act="closeSheet">Close</button></div>`, 'pl-t');
 }
 function toast(msg){ const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
-function go(t){ if (sil.running) silStop(false); stopReading(); flow = null; renderFlow(); sil.custom = null; tab = t; sheet = null; render(); window.scrollTo(0,0); }
+function go(t){ if (['library','path'].includes(t)) { S.seenTabs = [...new Set([...(S.seenTabs || []), t])]; save(); } if (sil.running) silStop(false); stopReading(); flow = null; renderFlow(); sil.custom = null; tab = t; sheet = null; render(); window.scrollTo(0,0); }
 
 /* ---------- audio & voice ---------- */
 function actx(){
@@ -1550,6 +1587,12 @@ document.addEventListener('click', e => {
     case 'redoOb': Object.assign(ob, {i:0, need:null, reasons:[], time:null, name:''}); S.profile = null; save(); sheet = null; render(); break;
 
     case 'tab': go(b.dataset.tab); break;
+    case 'pathView': pathView = b.dataset.k; render(); break;
+    case 'newVow': sheet = 'newvow'; renderSheet(); break;
+    case 'goVows': go('path'); pathView = 'vows'; sheet = 'newvow'; render(); break;
+    case 'openReminder': sheet = 'reminder'; renderSheet(); break;
+    case 'remIcs': { const tm = remTime(); const a2 = document.createElement('a'); a2.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsText(tm)); a2.download = 'vowway-reminder.ics';
+      document.body.appendChild(a2); a2.click(); a2.remove(); S.reminderSet = tm; save(); toast('Open the file to add it to your calendar'); break; }
     case 'unlock': { const v = (document.getElementById('pin').value || '').trim(); if (v) unlock(v); break; }
     case 'forgotPin': if (pendingDelete === 'pin') { try { localStorage.removeItem(KEY); } catch(err){} lockedBlob = null; pinKey = null; S = fresh(); pendingDelete = null; render(); } else { pendingDelete = 'pin'; render(); } break;
     case 'pinOn': { const a1 = document.getElementById('newpin').value.trim(), a2 = document.getElementById('newpin2').value.trim(), er = document.getElementById('pinerr');
@@ -1627,12 +1670,12 @@ document.addEventListener('click', e => {
     case 'vfUnit': vf.unit = b.dataset.k; render(); break;
     case 'vfStart': vf.start = b.dataset.k; render(); break;
     case 'removePractice': S.practices = S.practices.filter(x => x.id != b.dataset.id); save(); render(); break;
-    case 'startLib': { const l = LIB[+b.dataset.i]; S.practices.unshift({id:Date.now(), t:l.t, kind:l.kind || 'do', perWeek:0, d:l.d, r:l.r, start:t, checks:[], slips:[]}); save(); render(); window.scrollTo(0,0); if (stepHook('practice', true)) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); } else toast('Vow made'); break; }
+    case 'startLib': { const l = LIB[+b.dataset.i]; S.practices.unshift({id:Date.now(), t:l.t, kind:l.kind || 'do', perWeek:0, d:l.d, r:l.r, start:t, checks:[], slips:[]}); save(); sheet = null; pathView = 'vows'; tab = 'path'; render(); window.scrollTo(0,0); if (stepHook('practice', true)) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); } else toast('Vow made'); break; }
     case 'cdays': customDays = +b.dataset.d; document.querySelectorAll('[data-act="cdays"]').forEach(c => c.setAttribute('aria-pressed', c === b)); break;
     case 'startCustom': { const v = (document.getElementById('ctitle').value || '').trim();
       if (!v) { document.getElementById('cerr').hidden = false; return; }
       const st = vfStart(); S.practices.unshift({id:Date.now(), t:v, kind:vf.kind, perWeek:vf.kind === 'do' ? vf.pw : 0, d:vfDays(), r:'', start:st, checks:[], slips:[]});
-      Object.assign(vf, {title:'', kind:'do', pw:0, len:'7', num:'2', unit:'months', start:'today', date:''}); save(); render(); window.scrollTo(0,0); if (stepHook('practice', true)) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); } else toast('Vow made'); break; }
+      Object.assign(vf, {title:'', kind:'do', pw:0, len:'7', num:'2', unit:'months', start:'today', date:''}); save(); sheet = null; pathView = 'vows'; tab = 'path'; render(); window.scrollTo(0,0); if (stepHook('practice', true)) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); } else toast('Vow made'); break; }
     case 'silMode': setSil(b.dataset.k, b.dataset.k === 'sleep' ? 20 : 3, b.dataset.k === 'sleep' ? 'ocean' : 'tone'); render(); break;
     case 'dur': sil.total = sil.left = +b.dataset.m * 60; render(); break;
     case 'sound': sil.sound = b.dataset.k; render(); break;
@@ -1669,7 +1712,7 @@ document.addEventListener('click', e => {
       break;
   }
 });
-document.addEventListener('input', e => { if (e.target.id === 'ctitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) l.innerHTML = journalList(); } });
+document.addEventListener('input', e => { if (e.target.id === 'remtime' && e.target.value) { S.reminderTime = e.target.value; save(); const g = document.getElementById('gcal'); if (g) g.href = googleCalUrl(e.target.value); } if (e.target.id === 'ctitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) l.innerHTML = journalList(); } });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && flow) { closeFlow(); return; }
   if (e.key === 'Escape' && sheet) { stopReading(); if (sheet === 'player' && sil.running) silStop(false); sheet = null; afterRefl = null; render(); }
