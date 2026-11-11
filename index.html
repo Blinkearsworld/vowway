@@ -472,7 +472,7 @@ const phase = h => h >= 5 && h < 8 ? 'dawn' : h >= 8 && h < 17 ? 'day' : h >= 17
 const STEPS = [
   {type:'intent',   t:'Write your first line',          d:'Just one: who do you want to be today? A single word is enough.'},
   {type:'text',     t:'One thing you’re grateful for',  d:'Big or small. A person, a moment, a cup of tea.', ph:'Today I’m grateful for…'},
-  {type:'silence',  t:'One quiet minute',               d:'Before you write tonight, one minute of quiet. A calm voice will guide you.'},
+  {type:'silence',  t:'One quiet minute',               d:'Before you write tonight, one minute of quiet. A gentle voice will guide you.'},
   {type:'reflect',  t:'Your first evening page',        d:'At the end of the day, answer one question. Keep it, or let it go.'},
   {type:'text',     t:'One kindness',                   d:'Write about one kindness today, one you gave or one you received.', ph:'Today someone…'},
   {type:'practice', t:'Your first small promise',       d:'Choose one small thing to do for three days. Small enough to keep.'},
@@ -526,7 +526,7 @@ const NEEDS = [
 const need = () => (S.profile && S.profile.need) || 'self';
 const FORYOU = {
   loss:      {t:'For the one you miss', d:'Light a lamp for them. A name is enough, or just a memory.', b:'Light a lamp', act:'goLamp'},
-  anxiety:   {t:'When it gets loud inside', d:'Three minutes of breathing. A calm voice will lead you.', b:'Breathe for 3 minutes', act:'goGuided3'},
+  anxiety:   {t:'When it gets loud inside', d:'Three minutes of breathing. A gentle voice will lead you.', b:'Breathe for 3 minutes', act:'goGuided3'},
   meaning:   {t:'A question to carry today', d:'What makes tomorrow worth getting up for?', b:'Write about it', act:'openRefl'},
   discipline:{t:'Start small, then keep it', d:'A three-day vow is the best first step. Small enough to keep.', b:'Choose a vow', act:'goVows'},
   guilt:     {t:'You are more than your worst moment', d:'Write what weighs on you, then let it go. Nothing is saved.', b:'Write and let go', act:'openRefl'},
@@ -916,7 +916,7 @@ function nowCard(){
     <h2>Your week, in a few lines</h2><p class="small" style="font-size:14px">What you did, what you felt, and what comes next.</p>
     <button class="btn glow wide" data-act="openLetter">Read it</button></section>`;
   if (h < 5) return `<section class="card now"><p class="eyebrow go">It’s late</p>
-    <h2>Can’t sleep?</h2><p class="small" style="font-size:14px">Let your thoughts settle. A calm voice and the sound of rain will stay with you. Whatever is waiting can wait until morning.</p>
+    <h2>Can’t sleep?</h2><p class="small" style="font-size:14px">Let your thoughts settle. A gentle voice and the sound of rain will stay with you. Whatever is waiting can wait until morning.</p>
     <button class="btn glow wide" data-act="goSleepRain">Rest now</button></section>`;
   if (heavyLately() && !d.refl) return `<section class="card now"><p class="eyebrow go">Be gentle today</p>
     <h2>You’ve been carrying a lot</h2><p class="small" style="font-size:14px">Some of your recent evenings felt heavy. Three slow minutes might help. If it’s more than you can carry alone, please talk to someone: <a href="https://findahelpline.com" target="_blank" rel="noopener">findahelpline.com</a></p>
@@ -929,11 +929,11 @@ function nowCard(){
     <p class="small" style="font-size:14px">Three short questions, then wind down for sleep.</p>
     <button class="btn glow wide" data-act="windDown">Begin</button></section>`;
   if (night && d.refl) return `<section class="card now"><p class="eyebrow go">Ready for sleep</p>
-    <h2>Let the day go</h2><p class="small" style="font-size:14px">A calm voice, the sound of the sea, and a screen that goes dark.</p>
+    <h2>Let the day go</h2><p class="small" style="font-size:14px">A gentle voice, the sound of the sea, and a screen that goes dark.</p>
     <button class="btn glow wide" data-act="goSleep">Wind down</button></section>`;
   const wk = `<button class="link" data-act="goPath">This week: ${esc(s.st.n)} ›</button>`;
   if (need() === 'calm' && !d.silence) return `<section class="card now"><p class="eyebrow go">Your quiet minutes</p>
-    <h2>Three minutes, just for you</h2><p class="small" style="font-size:14px">A calm voice and the sound of rain. Nothing to do but breathe.</p>
+    <h2>Three minutes, just for you</h2><p class="small" style="font-size:14px">A gentle voice and the sound of rain. Nothing to do but breathe.</p>
     <button class="btn glow wide" data-act="goGuided3">Begin</button>${wk}</section>`;
   if (need() === 'habits') { if (d.vow && !d.vow.checks.includes(TODAY()) && !(d.vow.slips || []).includes(TODAY())) return `<section class="card now"><p class="eyebrow go">Your vow today</p>
       <h2>${esc(d.vow.t)}</h2><p class="small" style="font-size:14px">${d.vow.d ? `Day ${Math.min(d.vow.d, pDay(d.vow))} of ${d.vow.d}` : `Day ${pDay(d.vow)}`}. One more light in your lantern.</p>
@@ -1064,14 +1064,14 @@ function viewSilence(){
   const sounds = sleep ? [['ocean','Sea'],['rain','Rain'],['wind','Wind']] : [['none','None'],['tone','Tone'],['rain','Rain'],['ocean','Sea'],['wind','Wind']];
   return `<div class="stack">
     ${sil.custom ? `<section class="greet"><p class="date">${esc(sil.custom.by)}</p><h1>${esc(sil.custom.t)}</h1><p class="lede">${sil.custom.type === 'listen' ? 'Press Begin, and let the voice guide you.' : 'Press Begin, and let the sound carry you.'}</p></section>` :
-    `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go. A calm voice and a soft sound will stay with you as you drift off.' : 'Stop for a moment. There’s nothing you need to do here.'}</p></section>`}
+    `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go. A gentle voice and a soft sound will stay with you as you drift off.' : 'Stop for a moment. There’s nothing you need to do here.'}</p></section>`}
     <div class="seg two" role="group" aria-label="Mode">${[['silence','Silence'],['sleep','Sleep']].map(([k,l]) => `<button data-act="silMode" data-k="${k}" aria-pressed="${sil.mode===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div>
     <div class="breath-wrap"><div class="breath ${sil.running && !sleep ? 'on' : ''}"></div>
       <div class="breath-center"><div class="breath-label" id="bl">${sil.running ? 'Breathe in' : sleep ? 'Rest' : 'Ready when you are'}</div><div class="time" id="tl">${mmss(sil.left)}</div></div></div>
     ${sleep ? '<p class="small" style="text-align:center">20 minutes. It keeps playing when your screen locks, then fades out by itself.</p>' : ''}
     <div ${sleep ? 'hidden' : ''}><p class="opt-label">How long</p><div class="chips">${durs.map(m => `<button class="chip" data-act="dur" data-m="${m}" aria-pressed="${sil.total === m*60}" ${sil.running ? 'disabled' : ''}>${m} min</button>`).join('')}</div></div>
     <div><p class="opt-label">Sound</p><div class="chips">${sounds.map(([k,l]) => `<button class="chip" data-act="sound" data-k="${k}" aria-pressed="${sil.sound===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>
-    <label class="toggle" for="voice"><input type="checkbox" id="voice" ${sil.voice ? 'checked' : ''} ${sil.running ? 'disabled' : ''}> Guided by a calm voice</label>
+    <label class="toggle" for="voice"><input type="checkbox" id="voice" ${sil.voice ? 'checked' : ''} ${sil.running ? 'disabled' : ''}> Guided by a gentle voice</label>
     <button class="btn ${sil.running ? 'ghost' : 'glow'} wide" data-act="silToggle">${sil.running ? 'End' : 'Begin'}</button>
     <p class="small" style="text-align:center">${wk ? `${plural(wk,'minute')} of silence this week. ` : ''}The guiding voice is AI-generated, made with an open model.</p>
     ${sleep ? '' : `
@@ -1387,7 +1387,7 @@ function unlocked(id){
   return true;
 }
 function nav(){
-  const items = [['today','Today'],['journal','Journal'],['silence','Calm'],['library','Library'],['path','Path']].filter(([id]) => unlocked(id));
+  const items = [['today','Today'],['journal','Journal'],['silence','Quiet'],['library','Library'],['path','Path']].filter(([id]) => unlocked(id));
   const seen = S.seenTabs || [];
   return `<nav class="nav" aria-label="Main" style="--tabs:${items.length}">${items.map(([id,l]) => `<button data-act="tab" data-tab="${id}" class="${['library','path'].includes(id) && !seen.includes(id) ? 'new' : ''}" ${tab===id ? 'aria-current="page"' : ''}>${ICON[id]}<span>${l}</span></button>`).join('')}</nav>`;
 }
