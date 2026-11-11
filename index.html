@@ -29,11 +29,16 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{background:#0E1424;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+html,body{height:100%;margin:0;overscroll-behavior-y:none}
+html{background:#0E1424}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
 #scene{position:fixed;inset:0;z-index:-2;transition:opacity 1s}
 #scene svg{width:100%;height:100%;display:block}
 #scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,22,.28) 0%,rgba(6,10,22,.06) 28%,rgba(6,10,22,.42) 62%,rgba(6,10,22,.72) 100%)}
+#scene .orb{transition:opacity .25s linear}
+.lede,.greet h1{text-shadow:0 1px 14px rgba(6,10,22,.45)}
+/* keeps content from sliding under the clock and battery */
+.topfade{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);z-index:19;background:color-mix(in srgb,var(--solid) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);pointer-events:none}
 #stars{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .greet h1,.greet .date,.greet .lede,.ob h1,.ob .lede,.mark{text-shadow:0 1px 14px rgba(0,0,0,.35)}
 button,input,textarea{font:inherit;color:inherit}
@@ -197,7 +202,7 @@ details.roots p{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--lam
 .breath.on{animation:breathe 10s ease-in-out infinite}
 @keyframes breathe{0%{transform:scale(.62)}40%{transform:scale(1)}100%{transform:scale(.62)}}
 .breath-center{position:relative;text-align:center}
-.breath-label{font-family:var(--display);font-size:24px;font-style:italic}
+.breath-label{font-family:var(--display);font-size:19px;font-style:italic;max-width:118px;line-height:1.2;margin:0 auto}
 .time{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:4px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field)}
 .seg.two{grid-template-columns:1fr 1fr}
@@ -331,7 +336,7 @@ body.flowing .app{visibility:hidden}
 /* nav */
 .nav button{position:relative}
 .nav .new::after{content:"";position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:var(--lamp-glow)}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:8px 4px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:6px 4px max(8px, calc(env(safe-area-inset-bottom) - 8px));z-index:20}
 .nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding:6px 0}
 .nav svg{width:22px;height:22px}
 .nav button[aria-current="page"]{color:var(--ink)}
@@ -636,7 +641,7 @@ const isNight = () => { const p = curPhase(); return p === 'dusk' || p === 'nigh
 /* ---------- living landscape: drawn in code, follows the time of day ---------- */
 const SKY = {
   dawn: {s1:'#27325E',s2:'#B57D97',s3:'#F5C29E',orb:'#FFE1B8',ox:300,oy:432,or:26,m:['#8A7FA8','#5E5788','#3B3A66'],w1:'#6A6496',w2:'#1F2446',sand:['#D9A48C','#B47A6D','#7F5258'],sea1:'#7A73A3',sea2:'#1C2244'},
-  day:  {s1:'#3F78BE',s2:'#8FBCE0',s3:'#DCEBF2',orb:'#FFF6DC',ox:285,oy:150,or:24,m:['#9CBCCB','#6593A5','#3C6A74'],w1:'#6EA0BA',w2:'#1F4A63',sand:['#E8C590','#CC9C66','#9D6E45'],sea1:'#5B9BC2',sea2:'#173F5E'},
+  day:  {s1:'#3F78BE',s2:'#8FBCE0',s3:'#DCEBF2',orb:'#FFF6DC',ox:250,oy:90,or:19,m:['#9CBCCB','#6593A5','#3C6A74'],w1:'#6EA0BA',w2:'#1F4A63',sand:['#E8C590','#CC9C66','#9D6E45'],sea1:'#5B9BC2',sea2:'#173F5E'},
   dusk: {s1:'#1A1F4E',s2:'#8A5487',s3:'#F2996B',orb:'#FFC089',ox:100,oy:440,or:30,m:['#7B5A82','#4F3A66','#2B2446'],w1:'#5E4672',w2:'#16183A',sand:['#BF7A6C','#8C4F5E','#55344C'],sea1:'#76527F',sea2:'#141838'},
   night:{s1:'#04070F',s2:'#0F1834',s3:'#22305A',orb:'#F2EDD7',ox:300,oy:140,or:16,m:['#2A3560','#1A2246','#0E142C'],w1:'#18224A',w2:'#050914',sand:['#2E2D4C','#201E3A','#14132A'],sea1:'#1B2550',sea2:'#040812'}
 };
@@ -654,8 +659,8 @@ function sceneSVG(kind, ph, id='s'){
     <linearGradient id="${id}mi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity="${ph === 'night' ? .04 : .16}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
   </defs>
   <rect width="400" height="${H + 2}" fill="url(#${id}sk)"/>
-  <circle cx="${c.ox}" cy="${c.oy}" r="${c.or * 5}" fill="url(#${id}og)"/><circle cx="${c.ox}" cy="${c.oy}" r="${c.or}" fill="${c.orb}"/>
-  ${ph === 'night' ? `<circle cx="${c.ox + 7}" cy="${c.oy - 5}" r="${c.or}" fill="${c.s1}"/>` : ''}`;
+  <g class="orb"><circle cx="${c.ox}" cy="${c.oy}" r="${c.or * 5}" fill="url(#${id}og)"/><circle cx="${c.ox}" cy="${c.oy}" r="${c.or}" fill="${c.orb}"/>
+  ${ph === 'night' ? `<circle cx="${c.ox + 7}" cy="${c.oy - 5}" r="${c.or}" fill="${c.s1}"/>` : ''}</g>`;
   if (kind === 'lake') {
     g += `${mtns}<rect y="${H}" width="400" height="${800 - H}" fill="url(#${id}wt)"/>
       <g transform="translate(0 ${2 * H}) scale(1 -1)" opacity=".3">${mtns}</g>
@@ -980,7 +985,7 @@ function viewSilence(){
     <div><p class="opt-label">Sound</p><div class="chips">${sounds.map(([k,l]) => `<button class="chip" data-act="sound" data-k="${k}" aria-pressed="${sil.sound===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>
     <label class="toggle" for="voice"><input type="checkbox" id="voice" ${sil.voice ? 'checked' : ''} ${sil.running ? 'disabled' : ''}> Guided by a calm voice</label>
     <button class="btn ${sil.running ? 'ghost' : 'glow'} wide" data-act="silToggle">${sil.running ? 'End' : 'Begin'}</button>
-    <p class="small" style="text-align:center">${plural(wk,'minute')} of silence this week. The guiding voice is AI-generated, made with an open model.</p>
+    <p class="small" style="text-align:center">${wk ? `${plural(wk,'minute')} of silence this week. ` : ''}The guiding voice is AI-generated, made with an open model.</p>
     ${sleep ? '' : `
     <div class="section-h"><h2>Together</h2><span class="small">one earth, one sky</span></div>
     <section class="card"><h2>Shared silence</h2>
@@ -1278,6 +1283,10 @@ function sheetSettings(){
       <div><p class="opt-label">Where today’s thought comes from. By default, every source equally.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
+      <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a backup now and then, to Files, iCloud Drive or email, so a new phone can pick up where you left off.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
+        <div class="row"><button class="btn ghost" data-act="backup" style="flex:1">Save a backup</button><button class="btn ghost" data-act="restore" style="flex:1">Restore</button></div>
+        <input type="file" id="restorefile" accept=".json,application/json,text/plain" hidden>
+        ${S.lastBackup ? `<p class="small" style="margin-top:6px">Last backup: ${esc(fromKey(S.lastBackup).toDateString())}</p>` : ''}</div>
       <div><p class="opt-label">Privacy</p>
         ${pinKey ? `<div class="row"><span class="small" style="flex:1;align-self:center">Your journal is encrypted with a passcode.</span><button class="btn ghost" data-act="pinOff">Turn off</button></div>`
           : `<p class="small" style="margin-bottom:8px">Add a passcode to encrypt your journal on this device. If you forget it, the journal can’t be recovered.</p>
@@ -1406,13 +1415,16 @@ function flowSaveRefl(release){
 
 /* ---------- render ---------- */
 const app = document.getElementById('app'), layer = document.getElementById('layer');
+function fadeOrb(){ const o = document.querySelector('#scene .orb'); if (o) o.style.opacity = Math.max(0, 1 - window.scrollY / 140).toFixed(2); }
+window.addEventListener('scroll', fadeOrb, {passive:true});
 function render(){
   document.documentElement.dataset.phase = curPhase(); drawScene();
   if (lockedBlob) { app.className = 'app ob-mode'; app.innerHTML = viewLock(); layer.innerHTML = ''; setTimeout(() => { const i = document.getElementById('pin'); i && i.focus(); }, 30); return; }
   if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 4) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
   app.className = 'app';
   app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
-  renderSheet();
+  renderSheet(); fadeOrb();
+  if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
 function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, reminder:sheetReminder}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
@@ -1587,6 +1599,12 @@ document.addEventListener('click', e => {
     case 'redoOb': Object.assign(ob, {i:0, need:null, reasons:[], time:null, name:''}); S.profile = null; save(); sheet = null; render(); break;
 
     case 'tab': go(b.dataset.tab); break;
+    case 'backup': { S.lastBackup = dk(new Date()); save(); setTimeout(async () => {
+        const raw = localStorage.getItem(KEY) || JSON.stringify(S), name = `vowway-backup-${dk(new Date())}.json`;
+        try { const f = new File([raw], name, {type:'application/json'});
+          if (navigator.canShare && navigator.canShare({files:[f]})) { await navigator.share({files:[f], title:'vowway backup'}); toast('Backup ready'); return; } } catch(err){ if (err && err.name === 'AbortError') return; }
+        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([raw], {type:'application/json'})); a2.download = name; document.body.appendChild(a2); a2.click(); a2.remove(); toast('Backup saved'); }, 400); render(); break; }
+    case 'restore': { const i2 = document.getElementById('restorefile'); if (i2) i2.click(); break; }
     case 'pathView': pathView = b.dataset.k; render(); break;
     case 'newVow': sheet = 'newvow'; renderSheet(); break;
     case 'goVows': go('path'); pathView = 'vows'; sheet = 'newvow'; render(); break;
@@ -1711,6 +1729,13 @@ document.addEventListener('click', e => {
       else { pendingDelete = 'all'; renderSheet(); }
       break;
   }
+});
+document.addEventListener('change', e => {
+  if (e.target.id !== 'restorefile' || !e.target.files[0]) return;
+  e.target.files[0].text().then(txt => { let o; try { o = JSON.parse(txt); } catch(err){ o = null; }
+    if (!o || !(o.enc || o.profile || o.journey)) { toast('That file isn’t a vowway backup'); return; }
+    if (!confirm('Replace everything on this phone with this backup?')) return;
+    localStorage.setItem(KEY, txt); location.reload(); });
 });
 document.addEventListener('input', e => { if (e.target.id === 'remtime' && e.target.value) { S.reminderTime = e.target.value; save(); const g = document.getElementById('gcal'); if (g) g.href = googleCalUrl(e.target.value); } if (e.target.id === 'ctitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) l.innerHTML = journalList(); } });
 document.addEventListener('keydown', e => {
