@@ -338,6 +338,8 @@ body.flowing .app{visibility:hidden}
 .fl .grow{flex:1}
 .fl-foot{display:flex;flex-direction:column;gap:10px}
 .fl-skip{background:none;border:0;color:var(--muted);font-size:14px;padding:6px;align-self:center}
+.welcome-go{opacity:0;pointer-events:none;transition:opacity 1.2s}
+.welcome-go.shown{opacity:1;pointer-events:auto}
 .fl-breath{display:grid;place-items:center;height:230px;position:relative}
 .fl-breath .ring{position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(242,185,94,.38),transparent 70%);transform:scale(.62);animation:breathe 10s ease-in-out infinite}
 .fl-breath .ring::after{content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35)}
@@ -469,6 +471,10 @@ const cityHour = tz => { try { const p = new Intl.DateTimeFormat('en-GB',{timeZo
   return {h:+p.find(x=>x.type==='hour').value, m:p.find(x=>x.type==='minute').value}; } catch(e){ return null; } };
 const phase = h => h >= 5 && h < 8 ? 'dawn' : h >= 8 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night';
 
+/* what tomorrow holds, by the number of the next step: a small reason to come back */
+const TEASE = {2:'I’ll ask you about one good thing in your day, however small.', 3:'One quiet minute, guided by a gentle voice.',
+  4:'Your first evening page: three questions only you can answer.', 5:'A kindness, given or received. Notice one tomorrow.',
+  6:'A small promise to yourself. Just three days.', 7:'Your journal will write you a letter about your first week.'};
 const STEPS = [
   {type:'intent',   t:'Write your first line',          d:'Just one: who do you want to be today? A single word is enough.'},
   {type:'text',     t:'One thing you’re grateful for',  d:'Big or small. A person, a moment, a cup of tea.', ph:'Today I’m grateful for…'},
@@ -1480,7 +1486,15 @@ function openFlow(withArrival){
   if (!withArrival && !p.steps.length) { flowAct(p.act); return; }
   flow = Object.assign(p, {i: withArrival ? -1 : 0, data:{mood:null, a:['','','']}}); renderFlow();
 }
-function closeFlow(){ flow = null; renderFlow(); render(); }
+let welcomeT = [];
+function welcomeVoice(){
+  welcomeT.forEach(clearTimeout); welcomeT = [];
+  [[800,'You’re here. That’s already a good step.'],[6000,'Breathe in slowly, all the way down.'],[12000,'And let it go.'],[18000,'Nothing to fix. Nothing to achieve. Just this breath.']]
+    .forEach(([ms, line]) => welcomeT.push(setTimeout(() => { if (flow && flow.welcome && flow.i === -1) speak(line); }, ms)));
+  welcomeT.push(setTimeout(() => { const g = document.querySelector('.welcome-go'); if (g) g.classList.add('shown'); }, 22000));
+}
+function welcomeStop(){ welcomeT.forEach(clearTimeout); welcomeT = []; voStop(); }
+function closeFlow(){ welcomeStop(); flow = null; renderFlow(); render(); }
 function flowAct(act){
   if (act === 'sleep') { setSil('sleep', 20, 'ocean'); sil.voice = true; go('silence'); }
   else if (act === 'sleepRain') { setSil('sleep', 20, 'rain'); sil.voice = true; go('silence'); }
@@ -1499,6 +1513,12 @@ function renderFlow(){
   let body = '', foot = '';
   switch (step) {
     case 'arrive':
+      if (flow.welcome) {
+        body = `<div class="grow"></div><div class="fl-breath"><div class="ring"></div><div class="lbl" id="flbl">Take a breath</div></div>
+          <h1>Welcome${name}</h1><p class="lede">Before anything else, one quiet minute. Just breathe with the circle.</p><div class="grow"></div>`;
+        foot = `<button class="btn glow wide welcome-go" data-act="flowGo">${esc(flow.cta)}</button><button class="fl-skip" data-act="flowGo">Skip</button>`;
+        break;
+      }
       body = `<div class="grow"></div><div class="fl-breath"><div class="ring"></div><div class="lbl" id="flbl">Take a breath</div></div>
         <h1>${hello}${name}</h1><p class="lede">${esc(flow.sub)}</p><div class="grow"></div>`;
       foot = `<button class="btn glow wide" data-act="flowGo">${esc(flow.cta)}</button>${flow.steps.length || flow.act ? '<button class="fl-skip" data-act="flowClose">Just look around</button>' : ''}`;
@@ -1551,10 +1571,10 @@ function renderFlow(){
       const L = lampState(), jj = journey();
       let title, text;
       if (step === 'done') { title = 'You’re set for today'; text = 'Come back this evening to close your day.'; }
-      else if (flow.kind === 'evening') { title = 'Your day is closed'; text = 'A new light in your lantern. Rest well; tomorrow the path goes on.'; }
-      else if (jj.phase === 'first') { title = 'A firefly for your lantern'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow: ${jj.step.t}.`; }
+      else if (flow.kind === 'evening') { title = 'Your day is closed'; text = lantern().full ? 'Your lantern is full. Tomorrow you can let the fireflies fly into your sky.' : `A new light in your lantern. ${lantern().size - lantern().fill === 1 ? 'One more day, and it is full.' : `${lantern().size - lantern().fill} more, and it is full.`} Rest well.`; }
+      else if (jj.phase === 'first') { title = 'A firefly for your lantern'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow your lantern gets light number ${lantern().fill + 1}. ${TEASE[jj.n] || ''}`; }
       else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the path begins. Each week, a new theme for your evenings; your lantern keeps filling.'; }
-      else { title = 'A firefly for your lantern'; text = 'That’s all for now. Come back this evening to close your day.'; }
+      else { title = 'A firefly for your lantern'; text = 'That’s all for now. This evening, three short questions close your day.'; }
       body = `<div class="grow"></div><div class="stonebox">${lanternSVG(lantern().fill, lantern().size, 1, 'fl', 'new')}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
       break; }
@@ -1782,7 +1802,7 @@ document.addEventListener('click', e => {
     case 'obFinish': { ob.name = (document.getElementById('obname').value || '').trim();
       const first = REASONS.find(r => r.id === ob.reasons[0]);
       S.profile = {need:ob.need, reasons:[...ob.reasons], time:ob.time, name:ob.name, startStation:first ? first.st : 0};
-      save(); tab = 'today'; render(); window.scrollTo(0,0); openFlow(true); break; }
+      save(); tab = 'today'; render(); window.scrollTo(0,0); openFlow(true); flow.welcome = true; renderFlow(); welcomeVoice(); break; }
     case 'redoOb': Object.assign(ob, {i:0, need:null, reasons:[], time:null, name:''}); S.profile = null; save(); sheet = null; render(); break;
 
     case 'tab': go(b.dataset.tab); break;
@@ -1820,7 +1840,7 @@ document.addEventListener('click', e => {
     case 'noteMood': noteMood = noteMood === b.dataset.id ? null : b.dataset.id; document.querySelectorAll('[data-act="noteMood"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.id === noteMood)); break;
     case 'saveNote': { const el = document.getElementById('note'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
       S.reflections.push({id:Date.now(), date:t, grat:true, q:[currentPrompt()], a:[v]}); composing = false; save(); render(); toast('Saved to today’s page'); break; }
-    case 'flowGo': if (flow.steps.length) { flow.i = 0; renderFlow(); } else flowAct(flow.act); break;
+    case 'flowGo': welcomeStop(); if (flow.steps.length) { flow.i = 0; renderFlow(); } else flowAct(flow.act); break;
     case 'flowClose': closeFlow(); break;
     case 'flowNext': flowNext(); break;
     case 'flowChip': { const i = document.getElementById('fword'); if (i) i.value = b.dataset.w;
