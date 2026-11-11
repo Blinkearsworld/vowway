@@ -516,7 +516,7 @@ const SLEEP_SCRIPT = [[1,'It’s time to rest. Lie down, and let the day go.'],[
 
 /* ---------- library ----------
    Reads: public-domain translations (pre-1931 in the US, translators dead 70+ years). "adapted" = our wording based on such translations.
-   Listens: original vowway scripts. Sounds: synthesized here; the real app will use CC0 field recordings. */
+   Listens: original vowway scripts. Sounds: CC0 field recordings from Freesound (rain, ocean, wind), looped and mixed here. */
 const THEMES = [['all','All'],['calm','Calm'],['grief','Grief & loss'],['strength','Strength'],['kindness','Kindness'],['meaning','Meaning'],['together','Living together'],['sleep','Sleep']];
 const LIBRARY = [
   {id:'tagore35', type:'read', th:['together','meaning'], min:1, t:'Where the mind is without fear', by:'Rabindranath Tagore, Gitanjali 35', tr:'Tagore’s own English (1912)',
@@ -1463,16 +1463,30 @@ function noiseBuf(c, kind){
   return b;
 }
 function soundStart(kind){
-  if (kind === 'none') return; const c = actx(); if (!c) return;
+  sil.base = 0; if (kind === 'none') return; const c = actx(); if (!c) return;
   const master = c.createGain(); master.gain.setValueAtTime(0, c.currentTime); master.connect(c.destination); sil.master = master; sil.nodes.push(master);
   if (kind === 'tone') {
-    master.gain.linearRampToValueAtTime(.045, c.currentTime + 3);
+    sil.base = .045; master.gain.linearRampToValueAtTime(.045, c.currentTime + 3);
     [110, 164.8, 220].forEach((f,i) => { const o = c.createOscillator(), g = c.createGain(), l = c.createOscillator(), lg = c.createGain();
       o.type = 'sine'; o.frequency.value = f; g.gain.value = i === 2 ? .25 : .5; l.frequency.value = .07 + i*.03; lg.gain.value = .2;
       l.connect(lg).connect(g.gain); o.connect(g).connect(master); o.start(); l.start(); sil.nodes.push(o, l, g, lg); });
     return;
   }
-  master.gain.linearRampToValueAtTime(kind === 'rain' ? .3 : .5, c.currentTime + 4);
+  /* real CC0 field recordings, looped without a seam; synthesized noise only if the file can't load */
+  sil.base = .85; master.gain.linearRampToValueAtTime(sil.base, c.currentTime + 4);
+  loopLoad(kind).then(buf => {
+    if (sil.master !== master) return;
+    if (!buf) { sil.base = kind === 'rain' ? .3 : .5; master.gain.cancelScheduledValues(c.currentTime); master.gain.linearRampToValueAtTime(sil.base, c.currentTime + 3); synthBed(c, kind, master); return; }
+    const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = .06; src.loopEnd = buf.duration - .06; src.connect(master); src.start(0, .06); sil.nodes.push(src);
+  });
+}
+const loopBuf = {};
+async function loopLoad(kind){ if (loopBuf[kind]) return loopBuf[kind];
+  try { const c = actx(); const r = await fetch(`sounds/loop-${kind}.mp3?v=2`); if (!r.ok) return null; loopBuf[kind] = await c.decodeAudioData(await r.arrayBuffer()); return loopBuf[kind]; } catch(e){ return null; } }
+/* the sound steps back while the voice speaks, then returns slowly */
+function duck(on){ const c = sil.ctx; if (!c || !sil.master || sil.fading || !sil.base) return; const g = sil.master.gain, now = c.currentTime;
+  g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(on ? sil.base * .3 : sil.base, now + (on ? .35 : 1.8)); }
+function synthBed(c, kind, master){
   const src = c.createBufferSource(); src.buffer = noiseBuf(c, kind === 'rain' ? 'white' : kind === 'ocean' ? 'brown' : 'pink'); src.loop = true;
   if (kind === 'rain') { const hp = c.createBiquadFilter(), lp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 800; lp.type = 'lowpass'; lp.frequency.value = 6000; src.connect(hp).connect(lp).connect(master); sil.nodes.push(hp, lp); }
   if (kind === 'ocean') { const lp = c.createBiquadFilter(), g = c.createGain(), l = c.createOscillator(), lg = c.createGain(); lp.type = 'lowpass'; lp.frequency.value = 700; g.gain.value = .55; l.frequency.value = .09; lg.gain.value = .45; l.connect(lg).connect(g.gain); src.connect(lp).connect(g).connect(master); l.start(); sil.nodes.push(lp, g, l, lg); }
@@ -1496,7 +1510,7 @@ async function voLoad(key){ const f = VO[key]; if (!f) return null; if (voBuf[f]
 async function voPlay(key, onend){
   const c = actx(), b = await voLoad(key); if (!b || !c) return false;
   voStop(); const src = c.createBufferSource(), g = c.createGain(); g.gain.value = 1; src.buffer = b; src.connect(g).connect(c.destination);
-  src.onended = () => { if (voSrc === src) { voSrc = null; onend && onend(); } }; src.start(); voSrc = src; return true;
+  src.onended = () => { duck(false); if (voSrc === src) { voSrc = null; onend && onend(); } }; duck(true); src.start(); voSrc = src; return true;
 }
 function voStop(){ const s0 = voSrc; voSrc = null; try { s0 && s0.stop(); } catch(e){} }
 function speak(text){
@@ -1506,10 +1520,10 @@ function speak(text){
 }
 function ttsSpeak(text){
   if (!('speechSynthesis' in window)) return;
-  try { const u = new SpeechSynthesisUtterance(text); u.rate = .82; u.pitch = .95; u.volume = .9; if (VOICE) u.voice = VOICE; speechSynthesis.speak(u); } catch(e){}
+  try { const u = new SpeechSynthesisUtterance(text); u.rate = .82; u.pitch = .95; u.volume = .9; if (VOICE) u.voice = VOICE; u.onstart = () => duck(true); u.onend = () => duck(false); speechSynthesis.speak(u); } catch(e){}
 }
-const TRACK = {rain:'sounds/rain.mp3', ocean:'sounds/ocean.mp3', wind:'sounds/wind.mp3'};
-const SLEEPTRACK = {rain:'sounds/sleep-rain.mp3', ocean:'sounds/sleep-ocean.mp3', wind:'sounds/sleep-wind.mp3'};
+const TRACK = {rain:'sounds/rain.mp3?v=2', ocean:'sounds/ocean.mp3?v=2', wind:'sounds/wind.mp3?v=2'};
+const SLEEPTRACK = {rain:'sounds/sleep-rain.mp3?v=2', ocean:'sounds/sleep-ocean.mp3?v=2', wind:'sounds/sleep-wind.mp3?v=2'};
 function mediaMeta(title){ try { if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({title, artist:'vowway', artwork:[{src:'icon-512.png', sizes:'512x512', type:'image/png'}]});
   navigator.mediaSession.setActionHandler('pause', () => silStop(false)); navigator.mediaSession.setActionHandler('stop', () => silStop(false)); } } catch(e){} }
 function silStart(){
