@@ -74,6 +74,20 @@ h3{font-size:17px;line-height:1.35}
 .card{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
 .card.quiet{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border-style:dashed}
 .card.now{box-shadow:inset 0 0 0 1px var(--lamp-glow),0 10px 30px -18px var(--lamp-glow)}
+.ff{animation:ffl 3.2s ease-in-out infinite}
+.ffnew{animation:ffin 1.8s cubic-bezier(.2,.8,.2,1),ffl 3.2s 1.8s ease-in-out infinite}
+.flying .ff{animation:flyup 2.6s ease-in forwards}
+@keyframes ffl{50%{opacity:.55}}
+@keyframes ffin{from{transform:translateY(-46px);opacity:0}}
+@keyframes flyup{to{transform:translate(var(--dx,0),-120px);opacity:0}}
+@media (prefers-reduced-motion: reduce){.ff,.ffnew{animation:none}}
+.flybox{display:grid;place-items:center}.flybox .lampsvg{width:170px;height:170px;overflow:visible}
+.lsizes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lsizes button{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
+.lsizes button b{font-weight:500;color:var(--ink);font-size:12.5px}
+.lsizes button[aria-pressed=true]{border-color:var(--lamp-glow);background:var(--surface)}
+.lsizes button:disabled{opacity:.4}
+.lsizes .lampsvg{width:44px;height:44px}
 .lampcard{flex-direction:row;align-items:center;gap:10px;padding:10px 18px}
 .lampsvg{width:84px;height:84px;flex:none}
 .big{font-family:var(--display);font-size:32px;margin:0;line-height:1.05;font-variant-numeric:tabular-nums}
@@ -638,7 +652,7 @@ async function unlock(pin){
 }
 async function setPin(pin){ pinSalt = crypto.getRandomValues(new Uint8Array(16)); pinKey = await deriveKey(pin, pinSalt); save(); }
 function viewLock(){
-  return `<div class="lockbox">${lampSVG(.8, 'lock', 4)}<h1>Your journal is locked</h1><p class="lede">Enter your passcode to open it.</p>
+  return `<div class="lockbox">${lanternSVG(4, 7, .8, 'lock')}<h1>Your journal is locked</h1><p class="lede">Enter your passcode to open it.</p>
     <input type="password" id="pin" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="Passcode">
     ${lockErr ? `<p class="err">${esc(lockErr)}</p>` : ''}
     <button class="btn glow wide" style="max-width:260px" data-act="unlock">Unlock</button>
@@ -657,7 +671,7 @@ const SKY = {
   dawn: {s1:'#27325E',s2:'#B57D97',s3:'#F5C29E',orb:'#FFE1B8',ox:300,oy:432,or:26,m:['#8A7FA8','#5E5788','#3B3A66'],w1:'#6A6496',w2:'#1F2446',sand:['#D9A48C','#B47A6D','#7F5258'],sea1:'#7A73A3',sea2:'#1C2244'},
   day:  {s1:'#3F78BE',s2:'#8FBCE0',s3:'#DCEBF2',orb:'#FFF6DC',ox:250,oy:90,or:19,m:['#9CBCCB','#6593A5','#3C6A74'],w1:'#6EA0BA',w2:'#1F4A63',sand:['#E8C590','#CC9C66','#9D6E45'],sea1:'#5B9BC2',sea2:'#173F5E'},
   dusk: {s1:'#1A1F4E',s2:'#8A5487',s3:'#F2996B',orb:'#FFC089',ox:100,oy:440,or:30,m:['#7B5A82','#4F3A66','#2B2446'],w1:'#5E4672',w2:'#16183A',sand:['#BF7A6C','#8C4F5E','#55344C'],sea1:'#76527F',sea2:'#141838'},
-  night:{s1:'#04070F',s2:'#0F1834',s3:'#22305A',orb:'#F2EDD7',ox:300,oy:140,or:16,m:['#2A3560','#1A2246','#0E142C'],w1:'#18224A',w2:'#050914',sand:['#2E2D4C','#201E3A','#14132A'],sea1:'#1B2550',sea2:'#040812'}
+  night:{s1:'#04070F',s2:'#0F1834',s3:'#22305A',orb:'#F2EDD7',ox:332,oy:82,or:14,m:['#2A3560','#1A2246','#0E142C'],w1:'#18224A',w2:'#050914',sand:['#2E2D4C','#201E3A','#14132A'],sea1:'#1B2550',sea2:'#040812'}
 };
 function sceneSVG(kind, ph, id='s'){
   const c = SKY[ph], H = kind === 'lake' ? 470 : 520;
@@ -783,13 +797,60 @@ function lampSVG(bright, id='g', n=0){
     <defs><radialGradient id="glow-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.6"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
     <ellipse cx="60" cy="108" rx="34" ry="4" style="fill:#000;opacity:.25"/>${out}</svg>`;
 }
+/* the lantern: one firefly for each day you show up. You choose its size; the fireflies grow smaller
+   in a bigger lantern, so it always fills exactly. When it is full, they fly off and become stars in your night sky. */
+function lantern(){
+  if (!S.lantern) S.lantern = {start:S.journey.start || TODAY(), size:7};
+  const size = S.lantern.size, start = S.lantern.start;
+  const fill = Math.min(size, [...activeDays()].filter(k => k >= start).length);
+  return {size, fill, full:fill >= size, freed:S.freed || 0};
+}
+function lanternSVG(fill, size, bright=1, id='g', mode=''){
+  const r = Math.max(1.15, Math.min(3.8, 3.8 * Math.sqrt(7 / size))), g = size ? fill / size : 0;
+  let ff = '';
+  for (let i = 0; i < fill; i++) {
+    const rr = Math.sqrt((i + .5) / size), th = i * 2.39996, x = (60 + 15 * rr * Math.cos(th)).toFixed(1), y = (67 + 23 * rr * Math.sin(th)).toFixed(1);
+    const cls = mode === 'new' && i === fill - 1 ? 'ff ffnew' : 'ff';
+    const st = mode === 'fly' ? `--dx:${((i % 5) - 2) * 14}px;animation-delay:${(i * .09).toFixed(2)}s` : `animation-delay:${((i * .37) % 3).toFixed(2)}s`;
+    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 2.6).toFixed(1)}" style="fill:var(--lamp-glow);opacity:.22"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFEFC8"/></g>`;
+  }
+  const ivory = '#F4ECDF';
+  return `<svg class="lampsvg ${mode === 'fly' ? 'flying' : ''}" viewBox="0 0 120 120" aria-hidden="true">
+    <defs><radialGradient id="lg-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
+    <ellipse cx="60" cy="110" rx="25" ry="3.2" style="fill:#000;opacity:.22"/>
+    ${fill ? `<circle cx="60" cy="66" r="48" fill="url(#lg-${id})" style="opacity:${(.2 + .8 * g * bright).toFixed(2)}"/>` : ''}
+    <circle cx="60" cy="12.5" r="6.2" style="fill:none;stroke:${ivory};stroke-width:3;opacity:.92"/>
+    <rect x="54" y="17.5" width="12" height="6.5" rx="3.2" style="fill:${ivory}"/>
+    <path d="M40 32 C 40 24.5, 80 24.5, 80 32 L80 34 L40 34 Z" style="fill:${ivory}"/>
+    <path d="M44 34 C 36 50, 36 86, 44 99 L76 99 C 84 86, 84 50, 76 34 Z" style="fill:#FFE9C2;fill-opacity:${(.1 + .28 * g).toFixed(2)};stroke:${ivory};stroke-opacity:.75;stroke-width:1.4"/>
+    ${ff}
+    <rect x="40" y="98.5" width="40" height="7.5" rx="3.6" style="fill:${ivory}"/></svg>`;
+}
+const LSIZES = [[7,'A week'],[21,'Three weeks'],[30,'A month'],[40,'Forty days'],[100,'A hundred days']];
 function lampCard(){
-  const L = lampState();
-  const next = MILES.find(m => m > L.total) || (Math.ceil((L.total+1)/365)*365);
-  const msg = L.total === 0 ? 'No stones yet. Your first step places the first one.' : L.gap >= 3 ? 'The path waited for you. Add a stone when you’re ready.' : L.bright < .75 ? 'Add a stone today, even a small one.' : 'Your cairn is growing.';
-  return `<section class="card lampcard">${lampSVG(L.bright, 'main', L.total)}
-    <div><p class="big">${L.total} <span>${L.total === 1 ? 'day' : 'days'} on the path</span></p><p class="small">${msg}</p>
-    <span class="next-stone"><b></b>Next marker: ${next} days</span></div></section>`;
+  const L = lampState(), F = lantern();
+  const msg = F.full ? 'Your lantern is full. Let the fireflies fly.'
+    : F.fill === 0 ? (L.total ? 'A new lantern. Your next step brings its first firefly.' : 'Your lantern is empty. Your first step brings the first firefly.')
+    : L.gap >= 3 ? 'Your lantern waited for you. Its lights are still here.'
+    : L.bright < .75 ? 'A little light today, even a small one.' : 'Your lantern is filling, one day at a time.';
+  return `<section class="card lampcard">${lanternSVG(F.fill, F.size, L.bright, 'main')}
+    <div><p class="big">${F.fill} <span>of ${F.size} lights</span></p><p class="small">${msg}</p>
+    ${F.full ? '<button class="btn glow" data-act="flyLantern" style="margin-top:10px">Let them fly</button>' : `<button class="link" data-act="lanternSize" style="margin-top:4px">A lantern for ${F.size} days ›</button>`}
+    ${F.freed ? `<p class="small" style="margin-top:4px">${F.freed} ${F.freed === 1 ? 'firefly' : 'fireflies'} in your night sky</p>` : ''}</div></section>`;
+}
+function sheetLantern(){
+  const F = lantern();
+  return sheetWrap(`<div class="stack"><h2 id="ln-t">How big is your lantern?</h2>
+    <p class="small">One firefly for each day you show up. In a bigger lantern the fireflies are smaller, so it always fills exactly. When it is full, they fly off and become stars in your night sky.</p>
+    <div class="lsizes">${LSIZES.map(([k,l]) => `<button data-act="setLantern" data-k="${k}" aria-pressed="${F.size === k}" ${k < F.fill ? 'disabled' : ''}>${lanternSVG(k, k, 1, 'ls' + k)}<b>${k} days</b><span>${l}</span></button>`).join('')}</div>
+    <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'ln-t');
+}
+let flown = 0;
+function sheetFly(){
+  return sheetWrap(`<div class="stack" style="text-align:center"><h2 id="fy-t">They’re stars now</h2>
+    <div class="flybox">${lanternSVG(flown, flown, 1, 'fly', 'fly')}</div>
+    <p class="lede">${flown} fireflies flew into your night sky. Look up tonight. A new lantern begins tomorrow.</p>
+    <button class="btn primary wide" data-act="closeSheet">Thank you</button></div>`, 'fy-t');
 }
 function intentUI(){
   return `<div class="chips">${INTENTS.map(w => `<button class="chip" data-act="chip" data-w="${w}">${w}</button>`).join('')}</div>
@@ -864,7 +925,7 @@ function nowCard(){
     <h2>Three minutes, just for you</h2><p class="small" style="font-size:14px">A calm voice and the sound of rain. Nothing to do but breathe.</p>
     <button class="btn glow wide" data-act="goGuided3">Begin</button>${wk}</section>`;
   if (need() === 'habits') { if (d.vow && !d.vow.checks.includes(TODAY()) && !(d.vow.slips || []).includes(TODAY())) return `<section class="card now"><p class="eyebrow go">Your vow today</p>
-      <h2>${esc(d.vow.t)}</h2><p class="small" style="font-size:14px">${d.vow.d ? `Day ${Math.min(d.vow.d, pDay(d.vow))} of ${d.vow.d}` : `Day ${pDay(d.vow)}`}. One more stone on your path.</p>
+      <h2>${esc(d.vow.t)}</h2><p class="small" style="font-size:14px">${d.vow.d ? `Day ${Math.min(d.vow.d, pDay(d.vow))} of ${d.vow.d}` : `Day ${pDay(d.vow)}`}. One more light in your lantern.</p>
       <button class="btn glow wide" data-act="check" data-id="${d.vow.id}">I kept it today</button>${(d.vow.kind === 'quit') ? `<button class="link" data-act="slip" data-id="${d.vow.id}" style="color:var(--muted)">I slipped today</button>` : ''}${wk}</section>`;
     if (!d.vow) return `<section class="card now"><p class="eyebrow go">Start small</p>
       <h2>Make a promise you can keep</h2><p class="small" style="font-size:14px">Three days is enough to begin. Small promises, kept, change who we are.</p>
@@ -948,7 +1009,8 @@ function viewToday(){
   const first = j.phase === 'first';
   return `<div class="stack">
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
-      <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
+      <button class="pill" data-act="lanternSize">${lanternSVG(lantern().fill, lantern().size, L.bright, 'pill')}${lantern().fill ? `${lantern().fill} of ${lantern().size} lights` : 'Your lantern is waiting'}</button></section>
+    ${lantern().full ? lampCard() : ''}
     ${first ? stepCard(j) : nowCard()}
     ${!first || S.journey.done[1] ? pageCard() : ''}
     ${first ? '' : forYouCard()}
@@ -1282,9 +1344,9 @@ function viewOnboarding(){
   const back = ob.i > 0 ? '<button class="ob-back" data-act="obBack">Back</button>' : '';
   let body = '', foot = '';
   if (ob.i === 0) {
-    body = `<div class="ob-hero">${lampSVG(1, 'ob', 4)}</div><h1>A journal that<br>guides you.</h1>
+    body = `<div class="ob-hero">${lanternSVG(4, 7, 1, 'ob')}</div><h1>A journal that<br>guides you.</h1>
       <p class="lede" style="font-size:19px;color:var(--ink);font-family:var(--display)">Feel calmer. Know yourself. Become better.</p>
-      <p class="lede">A few lines a day, with gentle questions to guide you. Private, and it stays on your device.</p>`;
+      <p class="lede">A few lines a day, with gentle questions to guide you. Each day adds a small light to your lantern. Private, and it stays on your device.</p>`;
     foot = `<button class="btn glow wide" data-act="obNext">Begin</button>`;
   } else if (ob.i === 1) {
     body = `<h1>What would help you most right now?</h1><p class="lede">Choose one. Everything stays open to you; this is just where we start.</p>
@@ -1361,6 +1423,7 @@ function sheetSettings(){
       <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">What gives you strength? Optional. Your daily word, and words on hard days, will come from it.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Your lantern. One firefly for each day; when it’s full, they become stars.</p><button class="btn ghost wide" data-act="lanternSize">A lantern for ${lantern().size} days ›</button></div>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
       <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a backup now and then, to Files, iCloud Drive or email, so a new phone can pick up where you left off.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
         <div class="row"><button class="btn ghost" data-act="backup" style="flex:1">Save a backup</button><button class="btn ghost" data-act="restore" style="flex:1">Restore</button></div>
@@ -1472,11 +1535,11 @@ function renderFlow(){
       const L = lampState(), jj = journey();
       let title, text;
       if (step === 'done') { title = 'You’re set for today'; text = 'Come back this evening to close your day.'; }
-      else if (flow.kind === 'evening') { title = 'Your day is closed'; text = 'A stone on your path. Rest well; tomorrow the path goes on.'; }
-      else if (jj.phase === 'first') { title = 'A stone on your path'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow: ${jj.step.t}.`; }
+      else if (flow.kind === 'evening') { title = 'Your day is closed'; text = 'A new light in your lantern. Rest well; tomorrow the path goes on.'; }
+      else if (jj.phase === 'first') { title = 'A firefly for your lantern'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow: ${jj.step.t}.`; }
       else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the real path begins. It has no end, only stations, and each time around it goes deeper.'; }
-      else { title = 'A stone on your path'; text = 'That’s all for now. Come back this evening to close your day.'; }
-      body = `<div class="grow"></div><div class="stonebox">${lampSVG(1, 'fl', L.total)}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
+      else { title = 'A firefly for your lantern'; text = 'That’s all for now. Come back this evening to close your day.'; }
+      body = `<div class="grow"></div><div class="stonebox">${lanternSVG(lantern().fill, lantern().size, 1, 'fl', 'new')}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
       break; }
   }
@@ -1505,7 +1568,7 @@ function render(){
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, lantern:sheetLantern, fly:sheetFly, note:sheetNote, reminder:sheetReminder}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -1645,11 +1708,16 @@ function setSil(mode, mins, sound){ sil.custom = null; sil.mode = mode; sil.tota
 
 /* night sky: a few slow stars in evening light */
 (function stars(){
-  const cv = document.getElementById('stars'), x = cv.getContext('2d'); let pts = [];
+  const cv = document.getElementById('stars'), x = cv.getContext('2d'); let pts = [], gold = [];
   const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function size(){ const r = window.devicePixelRatio || 1; cv.width = innerWidth * r; cv.height = innerHeight * r;
     pts = Array.from({length:70}, () => ({x:Math.random(), y:Math.random()*.75, r:(Math.random()*1.1 + .3) * r, p:Math.random()*6.28})); }
   function draw(ts){ x.clearRect(0,0,cv.width,cv.height);
+    const nf = Math.min((typeof S !== 'undefined' && S.freed) || 0, 160);
+    if (gold.length !== nf) { const r = window.devicePixelRatio || 1; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      gold = Array.from({length:nf}, () => ({x:rnd(), y:rnd()*.6, r:(rnd()*.9 + .9) * r, p:rnd()*6.28})); }
+    if (document.documentElement.dataset.phase === 'night') gold.forEach(s => { const a = .45 + .45*(still ? .6 : (Math.sin(ts/1300 + s.p) + 1)/2);
+      x.fillStyle = `rgba(255,214,140,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     if (document.documentElement.dataset.phase === 'night') pts.forEach(s => { const a = .2 + .4*(still ? .6 : (Math.sin(ts/1700 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,248,232,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     if (!still) requestAnimationFrame(draw); }
@@ -1698,6 +1766,10 @@ document.addEventListener('click', e => {
           if (navigator.canShare && navigator.canShare({files:[f]})) { await navigator.share({files:[f], title:'vowway backup'}); toast('Backup ready'); return; } } catch(err){ if (err && err.name === 'AbortError') return; }
         const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([raw], {type:'application/json'})); a2.download = name; document.body.appendChild(a2); a2.click(); a2.remove(); toast('Backup saved'); }, 400); render(); break; }
     case 'restore': { const i2 = document.getElementById('restorefile'); if (i2) i2.click(); break; }
+    case 'lanternSize': sheet = 'lantern'; renderSheet(); break;
+    case 'setLantern': { const k = +b.dataset.k; lantern(); S.lantern.size = k; save(); sheet = null; render(); toast(`A lantern for ${k} days`); break; }
+    case 'flyLantern': { const F = lantern(); if (!F.full) break; flown = F.size; S.freed = (S.freed || 0) + F.size; S.lanternsDone = (S.lanternsDone || 0) + 1;
+      S.lantern = {start:add(TODAY(), 1), size:F.size}; save(); sheet = 'fly'; render(); break; }
     case 'pathView': pathView = b.dataset.k; render(); break;
     case 'newVow': sheet = 'newvow'; renderSheet(); break;
     case 'goVows': go('path'); pathView = 'vows'; sheet = 'newvow'; render(); break;
@@ -1805,7 +1877,7 @@ document.addEventListener('click', e => {
       break; }
     case 'releaseRefl': { const body = document.getElementById('sbody'); body.classList.add('burning');
       if (!S.released.includes(t)) S.released.push(t); save();
-      setTimeout(() => { body.classList.remove('burning'); body.innerHTML = `<div class="released">${lampSVG(1, 'rel', 4)}<p>Let go. Tomorrow is a new day.</p></div>`; }, 1400);
+      setTimeout(() => { body.classList.remove('burning'); body.innerHTML = `<div class="released">${lanternSVG(3, 7, 1, 'rel')}<p>Let go. Tomorrow is a new day.</p></div>`; }, 1400);
       setTimeout(() => { stepHook('reflect'); sheet = null;
         if (afterRefl === 'sleep') { afterRefl = null; setSil('sleep', 20, 'ocean'); sil.voice = true; go('silence'); } else render(); }, 3400); break; }
     case 'delRefl': { const id = +b.dataset.id;
