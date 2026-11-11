@@ -78,9 +78,11 @@ h3{font-size:17px;line-height:1.35}
 .ffnew{animation:ffin 1.8s cubic-bezier(.2,.8,.2,1),ffl 3.2s 1.8s ease-in-out infinite}
 .flying .ff{animation:flyup 2.6s ease-in forwards}
 @keyframes ffl{50%{opacity:.55}}
+.ffw{animation:wander 9s ease-in-out infinite}
+@keyframes wander{0%,100%{transform:translate(0,0)}25%{transform:translate(var(--x1),var(--y1))}50%{transform:translate(var(--x2),var(--y2))}75%{transform:translate(var(--x3),var(--y3))}}
 @keyframes ffin{from{transform:translateY(-46px);opacity:0}}
 @keyframes flyup{to{transform:translate(var(--dx,0),-120px);opacity:0}}
-@media (prefers-reduced-motion: reduce){.ff,.ffnew{animation:none}}
+@media (prefers-reduced-motion: reduce){.ff,.ffnew,.ffw{animation:none}}
 .flybox{display:grid;place-items:center}.flybox .lampsvg{width:170px;height:170px;overflow:visible}
 .lsizes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .lsizes button{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
@@ -821,7 +823,9 @@ function lanternSVG(fill, size, bright=1, id='g', mode=''){
     const [x, y] = spots[order[k]].map(v => v.toFixed(1));
     const cls = mode === 'new' && k === fill - 1 ? 'ff ffnew' : 'ff';
     const st = mode === 'fly' ? `--dx:${((k % 5) - 2) * 14}px;animation-delay:${(k * .09).toFixed(2)}s` : `animation-delay:${((k * .37) % 3).toFixed(2)}s`;
-    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFB23E;opacity:.42"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFCF6A;opacity:.75"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>`;
+    const am = Math.max(1.6, Math.min(4.5, 4.5 * Math.sqrt(7 / size))), rnd = n => ((((Math.sin((k + 1) * n) * 9999) % 1 + 1) % 1) * 2 - 1) * am;
+    const wv = mode === 'fly' ? '' : `<g class="ffw" style="--x1:${rnd(12.9).toFixed(1)}px;--y1:${(rnd(78.2) * .7).toFixed(1)}px;--x2:${rnd(39.4).toFixed(1)}px;--y2:${(rnd(5.7) * .7).toFixed(1)}px;--x3:${rnd(91.1).toFixed(1)}px;--y3:${(rnd(23.3) * .7).toFixed(1)}px;animation-duration:${(7 + (k * 1.7) % 6).toFixed(1)}s;animation-delay:-${((k * 2.3) % 7).toFixed(1)}s">`;
+    ff += wv + `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFB23E;opacity:.42"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFCF6A;opacity:.75"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>` + (wv ? '</g>' : '');
   }
   const warm = (.15 + .7 * g * bright).toFixed(2);
   return `<svg class="lampsvg ${mode === 'fly' ? 'flying' : ''}" viewBox="0 0 120 120" aria-hidden="true">
