@@ -1235,6 +1235,7 @@ const SCENES = [['lake','Mountain lake'],['sea','Open sea'],['dunes','Desert dun
 function sheetSettings(){
   return sheetWrap(`<div class="stack">
       <h2 id="st-t">Settings</h2>
+      <div><p class="opt-label">Your name</p><div class="row"><input type="text" id="setname" maxlength="30" placeholder="Your first name" value="${esc((S.profile && S.profile.name) || '')}"><button class="btn ghost" data-act="saveName">Save</button></div></div>
       <div><p class="opt-label">Your place</p><div class="pals">${SCENES.map(([k,l]) => `<button data-act="setScene" data-k="${k}" aria-pressed="${S.scene===k}"><i>${sceneSVG(k, curPhase(), 'p' + k)}</i>${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">What you need most. Your home screen leads with it.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
       <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
@@ -1371,7 +1372,7 @@ const app = document.getElementById('app'), layer = document.getElementById('lay
 function render(){
   document.documentElement.dataset.phase = curPhase(); drawScene();
   if (lockedBlob) { app.className = 'app ob-mode'; app.innerHTML = viewLock(); layer.innerHTML = ''; setTimeout(() => { const i = document.getElementById('pin'); i && i.focus(); }, 30); return; }
-  if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; return; }
+  if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 4) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
   app.className = 'app';
   app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
   renderSheet();
@@ -1657,6 +1658,7 @@ document.addEventListener('click', e => {
       render(); break; }
     case 'setSrc': S.src = b.dataset.k; S.qoff = 0; save(); render(); break;
     case 'setMode': S.modePref = b.dataset.k; save(); render(); break;
+    case 'saveName': { const v = (document.getElementById('setname').value || '').trim(); if (S.profile) { S.profile.name = v; save(); render(); toast(v ? `Hello, ${v}` : 'Name removed'); } break; }
     case 'setNeed': S.profile.need = b.dataset.k; libType = null; save(); render(); break;
     case 'setScene': S.scene = b.dataset.k; save(); render(); break;
     case 'demoPath': if (pendingDelete !== 'demo') { pendingDelete = 'demo'; renderSheet(); break; } pendingDelete = null; S = Object.assign(demoPath(), keep()); save(); sheet = null; tab = 'today'; render(); window.scrollTo(0,0); toast('30 days in. A letter is waiting.'); break;
