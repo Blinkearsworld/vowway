@@ -90,6 +90,10 @@ h3{font-size:17px;line-height:1.35}
 .lsizes button[aria-pressed=true]{border-color:var(--lamp-glow);background:var(--surface)}
 .lsizes button:disabled{opacity:.4}
 .lsizes .lampsvg{width:44px;height:44px}
+.trybox{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--field);border:1px solid var(--line);font-size:14.5px;line-height:1.45}
+.trybox span{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--lamp);margin-bottom:3px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.row3 .btn{padding:10px 4px;font-size:14px}
 .lampcard{flex-direction:row;align-items:center;gap:10px;padding:10px 18px}
 .lampsvg{width:84px;height:84px;flex:none}
 .big{font-family:var(--display);font-size:32px;margin:0;line-height:1.05;font-variant-numeric:tabular-nums}
@@ -463,6 +467,27 @@ const Q = {
     ['Yoga is skill in action.','Bhagavad Gita 2:50'],['The mind is restless, but it is steadied by practice and by letting go.','Bhagavad Gita 6:35'],['Truth alone triumphs.','Mundaka Upanishad 3.1.6'],
     ['Lead me from the unreal to the real, from darkness to light.','Brihadaranyaka Upanishad 1.3.28'],['The whole world is one family.','Maha Upanishad 6.71'],['Better one’s own path, though imperfect, than another’s well walked.','Bhagavad Gita 3:35']]
 };
+/* each thought gets a plain, small thing to try today: wisdom you live, not just read */
+const QTHEMES = {thought:'kind kind present kind give self hope work time control quiet self self patience', christianity:'peace patience anger quiet quiet control hope kind courage',
+  islam:'hope anger hope quiet patience kind kind hope', judaism:'courage work self grateful kind peace kind give', buddhism:'peace self self peace anger grateful control patience',
+  hinduism:'control courage work quiet self hope kind self'};
+const QTH = new Map(); Object.entries(QTHEMES).forEach(([k, v]) => v.split(' ').forEach((th, i) => Q[k][i] && QTH.set(Q[k][i][0], th)));
+const TRY = {
+  kind:['Do one small kind thing today that no one asked for.','Say one warm sentence today to someone you usually rush past.'],
+  present:['Once today, stop for one minute and just notice where you are.','Eat one meal today without your phone. Just the food, and you.'],
+  give:['Give something small today: your time, your attention, or a little help.','Share something today you would usually keep for yourself.'],
+  self:['Notice one moment today when you acted like the person you want to be.','Tonight, write one true sentence about yourself you rarely admit.'],
+  hope:['When something feels hard today, tell yourself: this will pass.','Write down one thing you are looking forward to, however small.'],
+  work:['Do one ordinary task today with full care, as if it mattered a lot.','Finish one small thing today that you started and left.'],
+  time:['Do five minutes of the thing you keep postponing. Just five.','Put one thing you keep waiting for into your calendar today, with a date.'],
+  control:['When something worries you today, ask: is this up to me? If not, let it go for now.','Notice one thing today you tried to control that was never yours to control.'],
+  quiet:['Sit in silence for two minutes today. Nothing to do, nowhere to go.','Take three slow breaths before you open your phone in the morning.'],
+  patience:['Choose one small thing today and do it slowly, on purpose.','When you want to hurry someone today, wait one breath longer.'],
+  peace:['Let one small argument go today. You do not have to win it.','Answer one sharp word today with a calm one.'],
+  anger:['When anger comes today, take one slow breath before you answer.','Tonight, let go of one thing that annoyed you today. Write it, then release it.'],
+  courage:['Do one small thing today that feels a little uncomfortable.','Ask for something today that you usually would not ask for.'],
+  grateful:['Notice one good thing today, and say thank you for it, out loud or inside.','Tell someone today one thing you appreciate about them.']};
+const tryFor = q => { const l = TRY[QTH.get(q.text) || 'self']; return l[Math.floor(fromKey(TODAY()) / 864e5) % l.length]; };
 const ALLQ = (() => { const lists = Object.values(Q).map(l => [...l]); const out = []; let i = 0;
   while (lists.some(l => l.length)) { const l = lists[i % lists.length]; if (l.length) out.push(l.shift()); i++; } return out; })();
 
@@ -732,7 +757,7 @@ function drawScene(){ if (!S.sceneV2) { if (!S.scene || S.scene === 'lake') S.sc
 function activeDays(){
   const A = new Set([...Object.keys(S.intentions), ...S.released, ...S.deeds, ...Object.values(S.journey.done)]);
   S.reflections.forEach(r => A.add(r.date)); S.silence.forEach(s => A.add(s.date));
-  S.lamps.forEach(l => A.add(l.date)); S.practices.forEach(p => p.checks.forEach(c => A.add(c)));
+  S.lamps.forEach(l => A.add(l.date)); S.practices.forEach(p => p.checks.forEach(c => A.add(c))); Object.keys(S.lived || {}).forEach(k => A.add(k));
   return A;
 }
 /* the lamp never goes out: total days only grow; brightness reflects the last 7 days */
@@ -964,7 +989,6 @@ function nowCard(){
   return `<section class="card now">
     <div class="ptop"><p class="eyebrow go">This week · ${esc(s.st.n)}</p><span class="dayno">Day ${s.day} of 7</span></div>
     <p class="station-q">${esc(s.round > 1 ? s.st.deep : s.st.q)}</p>
-    <p class="small">Today’s small step: ${esc(s.st.s)}</p>
     <button class="btn ghost" data-act="writeStation">Write about it</button></section>`;
 }
 function todayRows(){
@@ -982,11 +1006,22 @@ function todayRows(){
   </section>`;
 }
 function forYouCard(){
-  if (!S.profile || !S.profile.reasons.length) return '';
+  if (!S.profile || !(S.profile.reasons || []).length) return '';
   const rs = S.profile.reasons, day = Math.floor(fromKey(TODAY()) / 864e5), f = FORYOU[rs[day % rs.length]];
   return `<section class="card"><p class="eyebrow">For you</p><h3>${esc(f.t)}</h3><p class="small">${esc(f.d)}</p>
     <button class="link" data-act="${f.act}">${esc(f.b)} ›</button></section>`;
 }
+function ritualCard(){
+  const t = TODAY(), L = (S.lived || {})[t], h = HOUR(), eve = h >= 17 || h < 5;
+  const q = L ? {text:L.q, src:L.src} : quote(), tr = L ? L.tr : tryFor(q);
+  const head = `<p class="eyebrow">Today’s thought</p><q>${esc(q.text)}</q><p class="small" style="margin-top:6px">${esc(q.src)}</p>`;
+  if (L) return `<section class="card wisdom">${head}<div class="trybox"><span>Try today</span>${esc(tr)}</div>
+    <p class="small" style="margin-top:10px">${L.a === 'yes' ? 'You tried it. A light for your lantern.' : L.a === 'some' ? 'A little counts. A light for your lantern.' : 'Not today. That’s honest, and tomorrow is new.'}</p></section>`;
+  return `<section class="card wisdom now">${head}<div class="trybox"><span>Try today</span>${esc(tr)}</div>
+    ${eve ? `<p class="opt-label" style="margin-top:12px">Did you try it?</p><div class="row3"><button class="btn glow" data-act="lived" data-a="yes">Yes</button><button class="btn ghost" data-act="lived" data-a="some">A little</button><button class="btn ghost" data-act="lived" data-a="no">Not today</button></div>`
+      : `<div class="foot"><span class="small">This evening, I’ll ask how it went.</span><button class="link" data-act="nextQuote">Another</button></div>`}</section>`;
+}
+function saveLived(a){ const t = TODAY(), q = quote(); S.lived = S.lived || {}; S.lived[t] = {q:q.text, src:q.src, tr:tryFor(q), a}; save(); }
 function wisdomCard(){
   const q = quote();
   return `<section class="card wisdom"><p class="eyebrow">Today’s thought</p><q>${esc(q.text)}</q>
@@ -1038,12 +1073,13 @@ function viewToday(){
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
       <button class="pill" data-act="lanternSize">${lanternSVG(lantern().fill, lantern().size, L.bright, 'pill')}${lantern().fill ? `${lantern().fill} of ${lantern().size} lights` : 'Your lantern is waiting'}</button></section>
     ${lantern().full ? lampCard() : ''}
-    ${first ? stepCard(j) : nowCard()}
+    ${first ? stepCard(j) : ''}
+    ${!first || (S.journey.done[1] && S.journey.done[1] < t) ? ritualCard() : ''}
+    ${first ? '' : nowCard()}
     ${!first || S.journey.done[1] ? pageCard() : ''}
     ${first ? '' : forYouCard()}
     ${srcCard()}
     ${yearAgoCard()}
-    ${wisdomCard()}
   </div>`;
 }
 
@@ -1198,6 +1234,9 @@ function weekLetter(){
   if (words.length) lines.push(`Your words were ${words.join(', ').toLowerCase()}.`);
   if (checks) lines.push(`You kept your vows ${plural(checks,'time')}.`);
   if (lamps) lines.push(`You lit ${plural(lamps,'lamp')} for someone.`);
+  const lv = days.map(k => (S.lived || {})[k]).filter(Boolean), tried = lv.filter(x => x.a !== 'no');
+  if (lv.length) { lines.push(`You lived ${tried.length} of this week’s thoughts${tried.length && tried.length < lv.length ? ', and you were honest about the rest' : ''}.`);
+    const best = lv.find(x => x.a === 'yes'); if (best) lines.push(`One that you tried: “${best.q}”`); }
   // the mentor part: what came up, how the vows went, one thing to try
   const cnt = {}; S.reflections.filter(r => days.includes(r.date)).forEach(r => themesOf(r).forEach(id => cnt[id] = (cnt[id] || 0) + 1));
   const top = Object.entries(cnt).filter(([,n]) => n >= 2).sort((x,y) => y[1] - x[1]).slice(0,2).map(([id]) => THEME.find(t => t.id === id));
@@ -1475,7 +1514,7 @@ function planFlow(){
     return {kind:'first', steps:map[j.step.type], cta:'Take today’s step', sub:`First steps · ${j.n} of 7: ${j.step.t}`};
   }
   if (isNight()) {
-    if (!d.refl) return {kind:'evening', steps:['mood','q0','q1','q2','keep','stone'], cta:'Close your day', sub:'Three short questions, then rest.'};
+    if (!d.refl) return {kind:'evening', steps:[...((S.lived || {})[TODAY()] ? [] : ['lived']), 'mood','q0','q1','q2','keep','stone'], cta:'Close your day', sub:'Three short questions, then rest.'};
     return {kind:'evening', steps:[], cta:'Wind down for sleep', act:'sleep', sub:'Your day is closed.'};
   }
   return d.intent ? {kind:'morning', steps:['carry','done'], cta:'Continue', sub:`Your word today: ${d.intent}`}
@@ -1530,10 +1569,10 @@ function renderFlow(){
       foot = `<button class="btn glow wide" data-act="flowWord">Next</button>${flow.kind === 'first' ? '' : '<button class="fl-skip" data-act="flowNext">Skip</button>'}`;
       break;
     case 'carry':
-      body = `<p class="eyebrow go">This week · ${esc(s.st.n)}</p><p class="q-carry">${esc(s.round > 1 ? s.st.deep : s.st.q)}</p>
-        <p class="lede">Carry this question with you today. Tonight, you can answer it.</p>
-        <section class="card"><p class="eyebrow">Today’s small step</p><p style="margin:0">${esc(s.st.s)}</p></section><div class="grow"></div>`;
-      foot = `<button class="btn glow wide" data-act="flowNext">I’ll carry it</button>`;
+      { const q = quote(); body = `<p class="eyebrow go">Today’s thought</p><p class="q-carry">${esc(q.text)}</p><p class="small">${esc(q.src)}</p>
+        <div class="trybox"><span>Try today</span>${esc(tryFor(q))}</div>
+        <p class="lede">This evening, I’ll ask how it went.</p><div class="grow"></div>`; }
+      foot = `<button class="btn glow wide" data-act="flowNext">I’ll try it</button>`;
       break;
     case 'grat':
       body = `<p class="eyebrow go">First steps · ${j.n} of 7</p><h1>${esc(j.step.t)}</h1><p class="lede">${esc(j.step.d)}</p>
@@ -1548,6 +1587,11 @@ function renderFlow(){
       const t = j.step.type, btn = t === 'silence' ? ['goSilence1','Begin one minute'] : t === 'practice' ? ['goVows','Choose a vow'] : ['review','Read your first letter'];
       body = `<p class="eyebrow go">First steps · ${j.n} of 7</p><h1>${esc(j.step.t)}</h1><p class="lede">${esc(j.step.d)}</p><div class="grow"></div>`;
       foot = `<button class="btn glow wide" data-act="${btn[0]}">${btn[1]}</button>`;
+      break; }
+    case 'lived': { const q = quote();
+      body = `<p class="eyebrow go">This morning’s thought</p><p class="q-carry">${esc(q.text)}</p>
+        <div class="trybox"><span>Try today</span>${esc(tryFor(q))}</div><h1 style="margin-top:14px">Did you try it?</h1><div class="grow"></div>`;
+      foot = `<button class="btn glow wide" data-act="livedFlow" data-a="yes">Yes</button><button class="btn ghost wide" data-act="livedFlow" data-a="some">A little</button><button class="fl-skip" data-act="livedFlow" data-a="no">Not today</button>`;
       break; }
     case 'mood':
       body = `<p class="eyebrow go">Closing your day</p><h1>How are you right now?</h1>
@@ -1881,6 +1925,8 @@ document.addEventListener('click', e => {
       document.querySelectorAll('[data-act="chip"]').forEach(c => c.setAttribute('aria-pressed', c === b)); break; }
     case 'saveIntent': { const el = document.getElementById('intent'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
       S.intentions[t] = v; save(); stepHook('intent'); sheet = null; render(); toast('Today’s word: ' + v); break; }
+    case 'lived': { saveLived(b.dataset.a); render(); toast(b.dataset.a === 'no' ? 'Thank you for being honest' : 'A light for your lantern'); break; }
+    case 'livedFlow': saveLived(b.dataset.a); flowNext(); break;
     case 'nextQuote': S.qoff++; save(); render(); break;
     case 'lightLamp': { const el = document.getElementById('lampfor'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
       S.lamps.push({date:t, for:v}); save(); render(); toast('Your lamp is lit'); break; }
