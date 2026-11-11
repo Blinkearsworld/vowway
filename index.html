@@ -1754,7 +1754,7 @@ function drawGlobe(ts){
 }
 requestAnimationFrame(drawGlobe);
 /* offline support when installed from its own address (ignored where service workers aren't allowed) */
-try { if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude\.ai|claudeusercontent/.test(location.host)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch(e){}
+try { if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude\.ai|claudeusercontent/.test(location.host)) navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(r => r.update()).catch(() => {}); } catch(e){}
 </script>
 </body>
 </html>
