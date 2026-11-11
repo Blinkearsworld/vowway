@@ -1024,6 +1024,7 @@ function ritualCard(){
     ${eve ? `<p class="opt-label" style="margin-top:12px">Did you try it?</p><div class="row3"><button class="btn glow" data-act="lived" data-a="yes">Yes</button><button class="btn ghost" data-act="lived" data-a="some">A little</button><button class="btn ghost" data-act="lived" data-a="no">Not today</button></div>`
       : `<div class="foot"><span class="small">This evening, I’ll ask how it went.</span><button class="link" data-act="nextQuote">Another</button></div>`}</section>`;
 }
+const vowToAsk = () => { const t = TODAY(); return S.practices.find(p => !pDone(p) && pStarted(p) && !p.checks.includes(t) && !(p.slips || []).includes(t)); };
 function todayYou(){
   const t = TODAY(), out = [], L = (S.lived || {})[t];
   if (S.intentions[t]) out.push(`You chose to be <em>${esc(S.intentions[t].toLowerCase())}</em>.`);
@@ -1168,7 +1169,14 @@ function vfDays(){
 function vfStart(){ const t = TODAY(); return vf.start === 'tomorrow' ? add(t, 1) : vf.start === 'date' && vf.date >= t ? vf.date : t; }
 function vowForm(){
   const chip = (act, k, label, on) => `<button class="chip" data-act="${act}" data-k="${k}" aria-pressed="${on}">${label}</button>`;
-  const days = vfDays();
+  const days = vfDays(), deep = S.practices.some(pDone);
+  if (!deep) return `<div class="vform">
+    <input type="text" id="ctitle" maxlength="70" placeholder="${vf.kind === 'quit' ? 'e.g. No sweets' : 'e.g. A short walk, or call my mother'}" value="${esc(vf.title)}">
+    <div class="seg two" role="group" aria-label="Kind of vow">${[['do','Something I’ll do'],['quit','Something I’ll give up']].map(([k,l]) => `<button data-act="vfKind" data-k="${k}" aria-pressed="${vf.kind===k}">${l}</button>`).join('')}</div>
+    <div><p class="opt-label">For how long</p><div class="chips">${[['3','3 days'],['7','7 days'],['14','14 days']].map(([k,l]) => chip('vfLen', k, l, vf.len === k)).join('')}</div></div>
+    <p class="small">Start small. When you keep your first vow to the end, longer ones open: 40 days, months, or no end at all.</p>
+    <p class="err" id="cerr" hidden>First, write what you’re promising yourself.</p>
+    <button class="btn primary wide" data-act="startCustom">Make this vow</button></div>`;
   return `<div class="vform">
     <input type="text" id="ctitle" maxlength="70" placeholder="${vf.kind === 'quit' ? 'e.g. No cigarettes' : 'e.g. Exercise, or call my mother'}" value="${esc(vf.title)}">
     <div class="seg two" role="group" aria-label="Kind of vow">${[['do','Something I’ll do'],['quit','Something I’ll give up']].map(([k,l]) => `<button data-act="vfKind" data-k="${k}" aria-pressed="${vf.kind===k}">${l}</button>`).join('')}</div>
@@ -1212,7 +1220,7 @@ function sheetReminder(){ return sheetWrap(`<div class="stack"><h2 id="rm-t">A d
 function sheetNewVow(){
   return sheetWrap(`<div class="stack"><h2 id="nv-t">A new vow</h2>
     <div><p class="opt-label">Start with one of these</p>
-      ${LIB.map((l,i) => `<div class="libitem"><div><h3>${esc(l.t)}</h3><p class="small">${l.d} days</p></div><button class="btn ghost" data-act="startLib" data-i="${i}">Begin</button></div>`).join('')}</div>
+      ${LIB.map((l,i) => (S.practices.some(pDone) || (l.d && l.d <= 14)) ? `<div class="libitem"><div><h3>${esc(l.t)}</h3><p class="small">${l.d} days</p></div><button class="btn ghost" data-act="startLib" data-i="${i}">Begin</button></div>` : '').join('')}</div>
     <div><p class="opt-label">Or write your own</p>${vowForm()}</div>
     <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'nv-t');
 }
@@ -1450,8 +1458,9 @@ function viewOnboarding(){
   return `<div class="ob">${prog}${body}<div class="grow"></div><div class="ob-foot">${foot}${back}</div></div>`;
 }
 
-/* new people see three tabs; Library opens after the second step, Path after the fourth */
+/* every tab is open from the first day */
 function unlocked(id){
+  return true; // every feature is open from day one; what unfolds over time is the depth inside each one
   const j = journey(), d = S.journey.done;
   if (id === 'library') return j.phase === 'path' || !!d[2];
   if (id === 'path') return j.phase === 'path' || !!d[4];
@@ -1534,7 +1543,7 @@ function planFlow(){
     return {kind:'first', steps:map[j.step.type], cta:'Take today’s step', sub:`First steps · ${j.n} of 7: ${j.step.t}`};
   }
   if (isNight()) {
-    if (!d.refl) return {kind:'evening', steps:[...((S.lived || {})[TODAY()] ? [] : ['lived']), 'mood','q0','q1','q2','keep','stone'], cta:'Close your day', sub:'Three short questions, then rest.'};
+    if (!d.refl) return {kind:'evening', steps:[...((S.lived || {})[TODAY()] ? [] : ['lived']), ...(vowToAsk() ? ['vowcheck'] : []), 'mood','q0','q1','q2','keep','stone'], cta:'Close your day', sub:'Three short questions, then rest.'};
     return {kind:'evening', steps:[], cta:'Wind down for sleep', act:'sleep', sub:'Your day is closed.'};
   }
   const br = S.silence.some(x => x.date === TODAY()) ? [] : ['breath1'];
@@ -1619,6 +1628,12 @@ function renderFlow(){
       body = `<p class="eyebrow go">This morning’s thought</p><p class="q-carry">${esc(q.text)}</p>
         <div class="trybox"><span>Try today</span>${esc(tryFor(q))}</div><h1 style="margin-top:14px">Did you try it?</h1><div class="grow"></div>`;
       foot = `<button class="btn glow wide" data-act="livedFlow" data-a="yes">Yes</button><button class="btn ghost wide" data-act="livedFlow" data-a="some">A little</button><button class="fl-skip" data-act="livedFlow" data-a="no">Not today</button>`;
+      break; }
+    case 'vowcheck': { const v = vowToAsk();
+      if (!v) { body = ''; foot = '<button class="btn glow wide" data-act="flowNext">Continue</button>'; break; }
+      body = `<p class="eyebrow go">Your vow · ${v.d ? `day ${Math.min(v.d, pDay(v))} of ${v.d}` : `day ${pDay(v)}`}</p><p class="q-carry">${esc(v.t)}</p>
+        <h1 style="margin-top:14px">Did you keep it today?</h1><div class="grow"></div>`;
+      foot = `<button class="btn glow wide" data-act="vowFlow" data-a="kept" data-id="${v.id}">I kept it</button><button class="btn ghost wide" data-act="vowFlow" data-a="slip" data-id="${v.id}">I slipped</button><button class="fl-skip" data-act="flowNext">Not sure yet</button>`;
       break; }
     case 'mood':
       body = `<p class="eyebrow go">Closing your day</p><h1>How are you right now?</h1>
@@ -1961,6 +1976,10 @@ document.addEventListener('click', e => {
       S.intentions[t] = v; save(); stepHook('intent'); sheet = null; render(); toast('Today’s word: ' + v); break; }
     case 'lived': { saveLived(b.dataset.a); render(); toast(b.dataset.a === 'no' ? 'Thank you for being honest' : 'A stone on your path'); break; }
     case 'breathDone': { welcomeStop(); const t = TODAY(); if (!S.silence.some(x => x.date === t)) { S.silence.push({date:t, min:1}); save(); } flowNext(); break; }
+    case 'vowFlow': { const p = S.practices.find(x => x.id == b.dataset.id); if (p) {
+        if (b.dataset.a === 'kept') { if (!p.checks.includes(t)) p.checks.push(t); toast(milestoneToday(p) || 'Vow kept today'); }
+        else { p.slips = p.slips || []; if (!p.slips.includes(t)) p.slips.push(t); toast('A slip is not the end. Tomorrow the vow goes on.'); }
+        save(); } flowNext(); break; }
     case 'livedFlow': saveLived(b.dataset.a); flowNext(); break;
     case 'nextQuote': S.qoff++; save(); render(); break;
     case 'lightLamp': { const el = document.getElementById('lampfor'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
