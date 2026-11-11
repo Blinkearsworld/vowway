@@ -956,10 +956,10 @@ function lampsForCard(){
   const t = TODAY(), mine = S.lamps.filter(l => l.date === t);
   return `<section class="card" id="lampcard"><p class="eyebrow">A lamp for someone</p>
     <h3>Who are you thinking of today?</h3>
-    <p class="small">Someone who’s ill, someone you’ve lost, someone far away. Their name stays on this device.</p>
+    <p class="small">Your child, a friend, someone you love, someone you miss. Anyone who could use a little light today. Their name stays on this device.</p>
     ${mine.length ? `<div class="lit">${mine.map(l => `<span>${esc(l.for)}</span>`).join('')}</div>` : ''}
     <div class="row"><input type="text" id="lampfor" maxlength="40" placeholder="A name, or just a thought"><button class="btn primary" data-act="lightLamp">Light</button></div>
-    <p class="together"><span class="pulse"></span>${fmt(demoCount(18200, 900) + mine.length)} lamps lit around the world today <span class="demo">demo</span></p></section>`;
+  </section>`;
 }
 function viewSilence(){
   const sleep = sil.mode === 'sleep';
