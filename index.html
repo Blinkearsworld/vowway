@@ -334,6 +334,10 @@ body.flowing .app{visibility:hidden}
 .fl .burn{font-family:var(--display);font-style:italic;font-size:22px;text-align:center;animation:fade 1s}
 
 /* nav */
+.fnote{border-left:2px solid var(--lamp-glow);padding:4px 0 4px 12px;margin:8px 0}
+.fnote p{margin:2px 0}
+.fnote .fq{font-family:var(--display);font-style:italic;font-size:15px;margin-top:6px}
+.fnote .fq span{display:block;font-family:var(--body);font-style:normal;font-size:12px;color:var(--muted)}
 .nav button{position:relative}
 .nav .new::after{content:"";position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:var(--lamp-glow)}
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:6px 4px max(8px, calc(env(safe-area-inset-bottom) - 8px));z-index:20}
@@ -425,11 +429,21 @@ const Q = {
     ['Knowing others is intelligence; knowing yourself is true wisdom.','Laozi, Tao Te Ching 33'],
     ['Dripping water hollows out stone.','Ovid']
   ],
-  christianity:[['Blessed are the peacemakers.','Matthew 5:9'],['Love is patient, love is kind.','1 Corinthians 13:4'],['Do not let the sun go down on your anger.','Ephesians 4:26']],
-  islam:[['Indeed, with hardship comes ease.','Qur’an 94:6'],['The strong one is not the one who overcomes others in wrestling, but the one who controls himself in anger.','Hadith, al-Bukhari'],['No soul is burdened beyond what it can bear.','Qur’an 2:286']],
-  judaism:[['If I am not for myself, who will be for me? If I am only for myself, what am I? And if not now, when?','Hillel, Pirkei Avot 1:14'],['It is not your duty to finish the work, but neither are you free to walk away from it.','Rabbi Tarfon, Pirkei Avot']],
-  buddhism:[['Hatred is never appeased by hatred. By non-hatred alone is it appeased.','Dhammapada 5'],['Greater than one who conquers a thousand times a thousand in battle is the one who conquers themself.','Dhammapada 103']],
-  hinduism:[['You have a right to your actions, but never to their fruits.','Bhagavad Gita 2:47'],['Lift yourself up by your own self; do not let yourself sink.','Bhagavad Gita 6:5']]
+  christianity:[['Blessed are the peacemakers.','Matthew 5:9'],['Love is patient, love is kind.','1 Corinthians 13:4'],['Do not let the sun go down on your anger.','Ephesians 4:26'],
+    ['Come unto me, all ye that labour and are heavy laden, and I will give you rest.','Matthew 11:28'],['Be still, and know that I am God.','Psalm 46:10'],['Take therefore no thought for the morrow.','Matthew 6:34'],
+    ['Weeping may endure for a night, but joy cometh in the morning.','Psalm 30:5'],['Be ye kind one to another, tenderhearted, forgiving one another.','Ephesians 4:32'],['Ask, and it shall be given you; seek, and ye shall find.','Matthew 7:7']],
+  islam:[['Indeed, with hardship comes ease.','Qur’an 94:6'],['The strong one is not the one who overcomes others in wrestling, but the one who controls himself in anger.','Hadith, al-Bukhari'],['No soul is burdened beyond what it can bear.','Qur’an 2:286'],
+    ['In the remembrance of God do hearts find rest.','Qur’an 13:28'],['God is with those who are patient.','Qur’an 2:153'],['Your smile for your brother is charity.','Hadith, at-Tirmidhi'],
+    ['None of you truly believes until he loves for his brother what he loves for himself.','Hadith, al-Bukhari and Muslim'],['Do not despair of the mercy of God.','Qur’an 39:53']],
+  judaism:[['If I am not for myself, who will be for me? If I am only for myself, what am I? And if not now, when?','Hillel, Pirkei Avot 1:14'],['It is not your duty to finish the work, but neither are you free to walk away from it.','Rabbi Tarfon, Pirkei Avot 2:16'],
+    ['Who is wise? One who learns from every person.','Pirkei Avot 4:1'],['Who is rich? One who is happy with their portion.','Pirkei Avot 4:1'],['Love your neighbour as yourself.','Leviticus 19:18'],
+    ['Seek peace, and pursue it.','Psalm 34:14'],['Whoever saves one life, it is as if they saved an entire world.','Mishnah Sanhedrin 4:5'],['The world stands on three things: on learning, on service, and on acts of kindness.','Pirkei Avot 1:2']],
+  buddhism:[['Hatred is never appeased by hatred. By non-hatred alone is it appeased.','Dhammapada 5'],['Greater than one who conquers a thousand times a thousand in battle is the one who conquers themself.','Dhammapada 103'],
+    ['All that we are is the result of what we have thought.','Dhammapada 1'],['Better than a thousand hollow words is one word that brings peace.','Dhammapada 100'],['Overcome anger by love.','Dhammapada 223'],
+    ['Health is the greatest gift, contentment the greatest wealth.','Dhammapada 204'],['As a solid rock is not shaken by the wind, the wise are not moved by praise or blame.','Dhammapada 81'],['Drop by drop the water pot is filled.','Dhammapada 122']],
+  hinduism:[['You have a right to your actions, but never to their fruits.','Bhagavad Gita 2:47'],['Lift yourself up by your own self; do not let yourself sink.','Bhagavad Gita 6:5'],
+    ['Yoga is skill in action.','Bhagavad Gita 2:50'],['The mind is restless, but it is steadied by practice and by letting go.','Bhagavad Gita 6:35'],['Truth alone triumphs.','Mundaka Upanishad 3.1.6'],
+    ['Lead me from the unreal to the real, from darkness to light.','Brihadaranyaka Upanishad 1.3.28'],['The whole world is one family.','Maha Upanishad 6.71'],['Better one’s own path, though imperfect, than another’s well walked.','Bhagavad Gita 3:35']]
 };
 const ALLQ = (() => { const lists = Object.values(Q).map(l => [...l]); const out = []; let i = 0;
   while (lists.some(l => l.length)) { const l = lists[i % lists.length]; if (l.length) out.push(l.shift()); i++; } return out; })();
@@ -938,6 +952,7 @@ function viewToday(){
     ${first ? stepCard(j) : nowCard()}
     ${!first || S.journey.done[1] ? pageCard() : ''}
     ${first ? '' : forYouCard()}
+    ${srcCard()}
     ${yearAgoCard()}
     ${wisdomCard()}
   </div>`;
@@ -1045,6 +1060,8 @@ function reminderBlock(){
     ${S.reminderSet ? `<p class="small">Last added for ${esc(S.reminderSet)}. To change it, edit or delete the event in your calendar.</p>` : ''}
     ${inClaude ? '<p class="small">Works in the installed app; this preview can’t open calendar files.</p>' : ''}</div>`;
 }
+let noteShown = null;
+function sheetNote(){ return sheetWrap(`<div class="stack"><h2 id="nt-t">Kept in your journal</h2>${noteHTML(noteShown)}<button class="btn primary wide" data-act="closeSheet">Thank you</button></div>`, 'nt-t'); }
 function sheetReminder(){ return sheetWrap(`<div class="stack"><h2 id="rm-t">A daily reminder</h2>${reminderBlock()}<button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'rm-t'); }
 function sheetNewVow(){
   return sheetWrap(`<div class="stack"><h2 id="nv-t">A new vow</h2>
@@ -1097,8 +1114,69 @@ function weekLetter(){
   if (words.length) lines.push(`Your words were ${words.join(', ').toLowerCase()}.`);
   if (checks) lines.push(`You kept your vows ${plural(checks,'time')}.`);
   if (lamps) lines.push(`You lit ${plural(lamps,'lamp')} for someone.`);
+  // the mentor part: what came up, how the vows went, one thing to try
+  const cnt = {}; S.reflections.filter(r => days.includes(r.date)).forEach(r => themesOf(r).forEach(id => cnt[id] = (cnt[id] || 0) + 1));
+  const top = Object.entries(cnt).filter(([,n]) => n >= 2).sort((x,y) => y[1] - x[1]).slice(0,2).map(([id]) => THEME.find(t => t.id === id));
+  if (top.length) lines.push(`What came up most in your writing: ${top.map(t => t.name).join(', and ')}.`);
+  S.practices.filter(p => !pDone(p)).forEach(p => { const sl = (p.slips || []).filter(c => days.includes(c)).length, ok = p.checks.filter(c => days.includes(c)).length;
+    if (sl >= 2) lines.push(`“${p.t}” slipped ${plural(sl,'time')}. That isn’t failure. Ask yourself what made those days harder, and make tomorrow a little easier.`);
+    else if (ok >= 5) lines.push(`You kept “${p.t}” on ${ok} days. It is becoming part of you.`); });
+  const tryNext = top.length ? top[0].next : heavy >= 2 ? 'three minutes of silence each morning' : walked >= 4 ? 'keep the same small rhythm; it is working' : 'one small step each day; that is enough';
+  lines.push(`One thing to try next week: ${tryNext}.`);
   const s = station(); lines.push(s && !s.justFinished ? `Next week the path continues through ${s.st.n}.` : 'Next week, the path goes on.');
+  if (S.src && S.src !== 'all') { const q = quote(); lines.push(`“${q.text}” (${q.src})`); }
   return lines;
+}
+
+/* ---------- a friend who listens, a mentor who notices (all on this device) ---------- */
+const THEME = [
+  {id:'tired', re:/\b(tired|exhausted|sleep|sleepy|worn out|no energy|drained)\b/, name:'being tired',
+   say:'You mentioned being tired. Tonight, maybe put the phone away a little earlier?', next:'one evening a week with no screens after nine'},
+  {id:'work', re:/\b(work|job|boss|deadline|office|meeting|exam|study|school)\b/, name:'work',
+   say:'Work took a lot today. Tomorrow, could you give yourself one small pause in the middle of it?', next:'three minutes of silence before work begins'},
+  {id:'alone', re:/\b(alone|lonely|nobody|no one|isolated|miss (him|her|them))\b/, name:'feeling alone',
+   say:'Feeling alone is heavy. Is there one person you could send a short message to tomorrow?', next:'light a lamp for someone, then tell them'},
+  {id:'close', re:/\b(mom|mum|mother|dad|father|parents?|family|son|daughter|kids?|children|wife|husband|partner|friend|brother|sister|grandma|grandmother|grandpa)\b/, name:'the people close to you',
+   say:'Someone close to you was on your mind. Maybe tell them, even in a few words.', next:'one honest, kind sentence to someone close'},
+  {id:'anger', re:/\b(angry|anger|mad|annoyed|furious|irritated|shouted|yelled)\b/, name:'anger',
+   say:'Anger came up today. You noticed it and wrote it down. That is already a step back from it.', next:'one slow breath before you answer, when anger comes'},
+  {id:'worry', re:/\b(worried|worry|anxious|scared|afraid|fear|nervous|stress|stressed|panic)\b/, name:'worry',
+   say:'Worry was here today. Tomorrow morning, write it down and ask: what is one thing I can do about it?', next:'three minutes of silence each morning'},
+  {id:'guilt', re:/\b(sorry|guilt|guilty|ashamed|my fault|mistake|failed|stupid)\b/, name:'being hard on yourself',
+   say:'You were hard on yourself. Would you speak this way to a good friend?', next:'one evening note about something you did well'},
+  {id:'thanks', re:/\b(grateful|thankful|thank|thanks|blessed|lucky|glad)\b/, name:'gratitude',
+   say:'You found something to be grateful for. Those moments add up.', next:'keep noticing one good thing each evening'}
+];
+const COMFORT = {thought:['Some things are within our power, while others are not.','Epictetus'], christianity:['Come unto me, all ye that labour and are heavy laden, and I will give you rest.','Matthew 11:28'],
+  islam:['Indeed, with hardship comes ease.','Qur’an 94:6'], judaism:['Weeping may endure for a night, but joy cometh in the morning.','Psalm 30:5'],
+  buddhism:['Drop by drop the water pot is filled.','Dhammapada 122'], hinduism:['Lift yourself up by your own self; do not let yourself sink.','Bhagavad Gita 6:5']};
+const PRI = ['alone','worry','guilt','anger','tired','close','work','thanks'];
+const themesOf = r => { const txt = (r.a || []).join(' ').toLowerCase(); return THEME.filter(th => th.re.test(txt)).map(th => th.id).sort((x,y) => PRI.indexOf(x) - PRI.indexOf(y)); };
+const ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh'];
+function friendNote(r){
+  const ids = themesOf(r), week = Array.from({length:7}, (_,i) => add(TODAY(), -i));
+  const before = S.reflections.filter(x => x !== r && week.includes(x.date));
+  let line = '';
+  if (ids.length) {
+    const th = THEME.find(x => x.id === ids[0]), n = before.filter(x => themesOf(x).includes(th.id)).length + 1;
+    line = n >= 2 && n <= 7 && th.id !== 'thanks' ? `This is the ${ORD[n]} time this week you wrote about ${th.name}. ${th.say.split(/(?<=[.?])\s/).slice(1).join(' ') || th.say}` : th.say;
+  } else if (r.mood === 'heavy') line = 'It was a heavy day. You still came back and wrote. That is enough for today.';
+  else if (r.mood === 'anxious') line = 'An uneasy day. Before sleep, three slow breaths. The rest can wait until morning.';
+  else if (r.mood === 'lost') line = 'Feeling lost is part of every path. Tomorrow, just one small step.';
+  else if (r.mood === 'calm') line = 'A calm day. Notice what helped, so you can find it again.';
+  else if (r.mood === 'grateful') line = 'A grateful heart. Maybe tell someone what you were thankful for.';
+  if (!line) return null;
+  const hard = ['heavy','anxious','lost'].includes(r.mood) || ids.some(i => ['alone','worry','guilt'].includes(i));
+  const c = hard && S.src && S.src !== 'all' ? COMFORT[S.src] : null;
+  return c ? {t:line, q:c[0], by:c[1]} : {t:line};
+}
+const noteHTML = n => n ? `<div class="fnote"><p class="eyebrow">A note back</p><p>${esc(n.t)}</p>${n.q ? `<p class="fq">“${esc(n.q)}”<span>${esc(n.by)}</span></p>` : ''}</div>` : '';
+function srcCard(){
+  if (S.srcAsked || S.src !== 'all' || !S.journey.done[3]) return '';
+  return `<section class="card srccard"><p class="eyebrow">Only if you like</p><h3>Where do you find strength?</h3>
+    <p class="small">Your daily word, and a few words on hard days, can come from it. You can change this any time in Settings.</p>
+    <div class="trad" style="margin-top:10px">${Object.entries(SRC).filter(([k]) => k !== 'all').map(([k,l]) => `<button data-act="setSrc" data-k="${k}"><span>${l}</span></button>`).join('')}</div>
+    <button class="fl-skip" data-act="srcLater" style="margin-top:6px">A bit of everything</button></section>`;
 }
 let jq = '';
 function dayEntries(k){
@@ -1120,6 +1198,7 @@ function journalList(){
       ${d.notes.map(r => { const m = MOODS.find(x => x.id === r.mood), qs = r.q || BASEQ;
         return `<div class="entry" style="border:0;padding:4px 0">${m ? `<span class="mood"><b style="background:${m.c}"></b>${m.l}</span>` : ''}
           ${r.a.map((x,i) => x ? `<p class="qa"><span>${esc(qs[i] || '')}</span>${esc(x)}</p>` : '').join('')}
+          ${noteHTML(r.note)}
           <div class="ehead"><span>${r.example ? '<span class="ex">example</span>' : ''}</span><button class="del ${pendingDelete === r.id ? 'confirm' : ''}" data-act="delRefl" data-id="${r.id}">${pendingDelete === r.id ? 'Delete for good?' : 'Delete'}</button></div></div>`; }).join('')}
       ${d.released ? '<p class="small"><em>You wrote something this evening, and let it go.</em></p>' : ''}
       ${d.lamps.length ? `<div class="lit">${d.lamps.map(l => `<span>${esc(l.for)}</span>`).join('')}</div>` : ''}
@@ -1280,7 +1359,7 @@ function sheetSettings(){
       <div><p class="opt-label">Your place</p><div class="pals">${SCENES.map(([k,l]) => `<button data-act="setScene" data-k="${k}" aria-pressed="${S.scene===k}"><i>${sceneSVG(k, curPhase(), 'p' + k)}</i>${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">What you need most. Your home screen leads with it.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
       <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
-      <div><p class="opt-label">Where today’s thought comes from. By default, every source equally.</p>
+      <div><p class="opt-label">What gives you strength? Optional. Your daily word, and words on hard days, will come from it.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
       <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a backup now and then, to Files, iCloud Drive or email, so a new phone can pick up where you left off.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
@@ -1397,7 +1476,7 @@ function renderFlow(){
       else if (jj.phase === 'first') { title = 'A stone on your path'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow: ${jj.step.t}.`; }
       else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the real path begins. It has no end, only stations, and each time around it goes deeper.'; }
       else { title = 'A stone on your path'; text = 'That’s all for now. Come back this evening to close your day.'; }
-      body = `<div class="grow"></div><div class="stonebox">${lampSVG(1, 'fl', L.total)}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p><p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
+      body = `<div class="grow"></div><div class="stonebox">${lampSVG(1, 'fl', L.total)}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
       break; }
   }
@@ -1408,7 +1487,7 @@ function renderFlow(){
 function flowSaveRefl(release){
   const t = TODAY(), qs = reflQuestions();
   if (release) { if (!S.released.includes(t)) S.released.push(t); }
-  else if (flow.data.mood || flow.data.a.some(Boolean)) S.reflections.push({id:Date.now(), date:t, mood:flow.data.mood, q:qs, a:flow.data.a});
+  else if (flow.data.mood || flow.data.a.some(Boolean)) { const r = {id:Date.now(), date:t, mood:flow.data.mood, q:qs, a:flow.data.a}; r.note = friendNote(r); S.reflections.push(r); }
   else if (!S.released.includes(t)) S.released.push(t);
   save(); stepHook('reflect', true);
 }
@@ -1426,7 +1505,7 @@ function render(){
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, reminder:sheetReminder}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -1719,8 +1798,9 @@ document.addEventListener('click', e => {
       document.querySelectorAll('[data-act="mood"]').forEach(c => c.setAttribute('aria-pressed', c.dataset.id === selMood)); break;
     case 'keepRefl': { const qs = reflQuestions(), ans = qs.map((_,i) => document.getElementById('q'+i).value.trim());
       if (!selMood && !ans.some(Boolean)) { document.getElementById('rerr').hidden = false; return; }
-      S.reflections.push({id:Date.now(), date:t, mood:selMood, q:qs, a:ans}); save(); stepHook('reflect'); sheet = null;
+      const r0 = {id:Date.now(), date:t, mood:selMood, q:qs, a:ans}; r0.note = friendNote(r0); S.reflections.push(r0); save(); stepHook('reflect'); sheet = null;
       if (afterRefl === 'sleep') { afterRefl = null; setSil('sleep', 20, 'ocean'); sil.voice = true; go('silence'); toast('Kept. Now, rest.'); }
+      else if (r0.note) { noteShown = r0.note; sheet = 'note'; render(); }
       else { render(); toast('Kept in your journal'); }
       break; }
     case 'releaseRefl': { const body = document.getElementById('sbody'); body.classList.add('burning');
@@ -1731,7 +1811,8 @@ document.addEventListener('click', e => {
     case 'delRefl': { const id = +b.dataset.id;
       if (pendingDelete === id) { S.reflections = S.reflections.filter(r => r.id !== id); pendingDelete = null; save(); } else pendingDelete = id;
       render(); break; }
-    case 'setSrc': S.src = b.dataset.k; S.qoff = 0; save(); render(); break;
+    case 'setSrc': S.src = b.dataset.k; S.qoff = 0; S.srcAsked = 1; save(); render(); if (b.closest('.srccard')) toast('Your daily word will come from there'); break;
+    case 'srcLater': S.srcAsked = 1; save(); render(); break;
     case 'setMode': S.modePref = b.dataset.k; save(); render(); break;
     case 'saveName': { const v = (document.getElementById('setname').value || '').trim(); if (S.profile) { S.profile.name = v; save(); render(); toast(v ? `Hello, ${v}` : 'Name removed'); } break; }
     case 'setNeed': S.profile.need = b.dataset.k; libType = null; save(); render(); break;
