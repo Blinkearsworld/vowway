@@ -1,5 +1,5 @@
-const CACHE = 'vowway-v9';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icon-180.png?v=3', 'icon-192.png?v=3', 'icon-512.png?v=3'];
+const CACHE = 'vowway-v10';
+const SHELL = ['./', 'index.html', 'manifest.json', 'icon-180.png?v=3', 'icon-192.png?v=3', 'icon-512.png?v=3', 'lantern.png?v=1'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

@@ -809,9 +809,9 @@ const ffOrder = {};
 function lanternSVG(fill, size, bright=1, id='g', mode=''){
   const r = Math.max(1.2, Math.min(3.6, 3.6 * Math.sqrt(7 / size))), g = size ? fill / size : 0;
   // every spot in the lantern, then a golden-ratio order so even a few fireflies spread out
-  const spots = Array.from({length:size}, (_,i) => { const rr = Math.sqrt((i + .9) / (size + .4)), th = i * 2.39996 + .6; return [60 + 25 * rr * Math.cos(th), 71 + 18 * rr * Math.sin(th)]; });
+  const spots = Array.from({length:size}, (_,i) => { const rr = Math.sqrt((i + .9) / (size + .4)), th = i * 2.39996 + .6; return [60 + 24 * rr * Math.cos(th), 77 + 15 * rr * Math.sin(th)]; });
   const order = ffOrder[size] || (ffOrder[size] = (() => { // each new firefly goes where there is most room
-    const o = [spots.reduce((bi, p, i) => Math.abs(p[0] - 52) + Math.abs(p[1] - 76) < Math.abs(spots[bi][0] - 52) + Math.abs(spots[bi][1] - 76) ? i : bi, 0)];
+    const o = [spots.reduce((bi, p, i) => Math.abs(p[0] - 52) + Math.abs(p[1] - 82) < Math.abs(spots[bi][0] - 52) + Math.abs(spots[bi][1] - 82) ? i : bi, 0)];
     while (o.length < size) { let best = -1, bd = -1;
       spots.forEach((p, i) => { if (o.includes(i)) return; const d = Math.min(...o.map(j => (p[0] - spots[j][0]) ** 2 + (p[1] - spots[j][1]) ** 2)); if (d > bd) { bd = d; best = i; } });
       o.push(best); }
@@ -821,21 +821,17 @@ function lanternSVG(fill, size, bright=1, id='g', mode=''){
     const [x, y] = spots[order[k]].map(v => v.toFixed(1));
     const cls = mode === 'new' && k === fill - 1 ? 'ff ffnew' : 'ff';
     const st = mode === 'fly' ? `--dx:${((k % 5) - 2) * 14}px;animation-delay:${(k * .09).toFixed(2)}s` : `animation-delay:${((k * .37) % 3).toFixed(2)}s`;
-    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFC85A;opacity:.28"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFDE8A;opacity:.6"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>`;
+    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFB23E;opacity:.42"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFCF6A;opacity:.75"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>`;
   }
-  const iv = '#F7EEDF', warm = (.18 + .62 * g * bright).toFixed(2);
+  const warm = (.15 + .7 * g * bright).toFixed(2);
   return `<svg class="lampsvg ${mode === 'fly' ? 'flying' : ''}" viewBox="0 0 120 120" aria-hidden="true">
     <defs><radialGradient id="lg-${id}"><stop offset="0" style="stop-color:#FFD98A;stop-opacity:.6"/><stop offset="1" style="stop-color:#FFD98A;stop-opacity:0"/></radialGradient>
-      <radialGradient id="lb-${id}" cx=".5" cy=".9" r=".85"><stop offset="0" style="stop-color:#FFF3C8;stop-opacity:${warm}"/><stop offset=".55" style="stop-color:#FBE3BC;stop-opacity:${(warm * .55).toFixed(2)}"/><stop offset="1" style="stop-color:#EDE6FF;stop-opacity:.12"/></radialGradient></defs>
-    <ellipse cx="60" cy="111" rx="24" ry="3" style="fill:#000;opacity:.18"/>
-    <circle cx="60" cy="70" r="56" fill="url(#lg-${id})" style="opacity:${(.15 + .85 * g * bright).toFixed(2)}"/>
-    <circle cx="60" cy="14.5" r="8.5" style="fill:none;stroke:${iv};stroke-width:4"/>
-    <path d="M50.5 30 C 50.5 21, 69.5 21, 69.5 30 Z" style="fill:${iv}"/>
-    <path d="M27 41 C 31 27.5, 89 27.5, 93 41 C 93 45, 27 45, 27 41 Z" style="fill:${iv}"/>
-    <path d="M34.5 44 C 21 58, 23 88, 38 97 L82 97 C 97 88, 99 58, 85.5 44 Z" style="fill:url(#lb-${id});stroke:${iv};stroke-width:4.2;stroke-linejoin:round"/>
-    <path d="M38 52 C 31 62, 31 78, 37 88" style="fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;opacity:.35"/>
-    ${ff}
-    <rect x="34" y="94.5" width="52" height="10.5" rx="5.2" style="fill:${iv}"/></svg>`;
+      <radialGradient id="lb-${id}" cx=".5" cy=".75" r=".7"><stop offset="0" style="stop-color:#FFE7A3;stop-opacity:1"/><stop offset="1" style="stop-color:#FFE7A3;stop-opacity:0"/></radialGradient></defs>
+    <ellipse cx="60" cy="112" rx="26" ry="3" style="fill:#000;opacity:.18"/>
+    <circle cx="60" cy="74" r="58" fill="url(#lg-${id})" style="opacity:${(.15 + .85 * g * bright).toFixed(2)}"/>
+    <image href="lantern.png?v=1" x="4" y="2" width="112" height="112"/>
+    <ellipse cx="60" cy="79" rx="29" ry="21" fill="url(#lb-${id})" style="opacity:${warm}"/>
+    ${ff}</svg>`;
 }
 const LSIZES = [[7,'A week'],[21,'Three weeks'],[30,'A month'],[40,'Forty days'],[100,'A hundred days']];
 function lampCard(){
