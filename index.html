@@ -805,26 +805,37 @@ function lantern(){
   const fill = Math.min(size, [...activeDays()].filter(k => k >= start).length);
   return {size, fill, full:fill >= size, freed:S.freed || 0};
 }
+const ffOrder = {};
 function lanternSVG(fill, size, bright=1, id='g', mode=''){
-  const r = Math.max(1.15, Math.min(3.8, 3.8 * Math.sqrt(7 / size))), g = size ? fill / size : 0;
+  const r = Math.max(1.2, Math.min(3.6, 3.6 * Math.sqrt(7 / size))), g = size ? fill / size : 0;
+  // every spot in the lantern, then a golden-ratio order so even a few fireflies spread out
+  const spots = Array.from({length:size}, (_,i) => { const rr = Math.sqrt((i + .9) / (size + .4)), th = i * 2.39996 + .6; return [60 + 25 * rr * Math.cos(th), 71 + 18 * rr * Math.sin(th)]; });
+  const order = ffOrder[size] || (ffOrder[size] = (() => { // each new firefly goes where there is most room
+    const o = [spots.reduce((bi, p, i) => Math.abs(p[0] - 52) + Math.abs(p[1] - 76) < Math.abs(spots[bi][0] - 52) + Math.abs(spots[bi][1] - 76) ? i : bi, 0)];
+    while (o.length < size) { let best = -1, bd = -1;
+      spots.forEach((p, i) => { if (o.includes(i)) return; const d = Math.min(...o.map(j => (p[0] - spots[j][0]) ** 2 + (p[1] - spots[j][1]) ** 2)); if (d > bd) { bd = d; best = i; } });
+      o.push(best); }
+    return o; })());
   let ff = '';
-  for (let i = 0; i < fill; i++) {
-    const rr = Math.sqrt((i + .5) / size), th = i * 2.39996, x = (60 + 21 * rr * Math.cos(th)).toFixed(1), y = (70 + 17 * rr * Math.sin(th)).toFixed(1);
-    const cls = mode === 'new' && i === fill - 1 ? 'ff ffnew' : 'ff';
-    const st = mode === 'fly' ? `--dx:${((i % 5) - 2) * 14}px;animation-delay:${(i * .09).toFixed(2)}s` : `animation-delay:${((i * .37) % 3).toFixed(2)}s`;
-    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 2.6).toFixed(1)}" style="fill:var(--lamp-glow);opacity:.22"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFEFC8"/></g>`;
+  for (let k = 0; k < fill; k++) {
+    const [x, y] = spots[order[k]].map(v => v.toFixed(1));
+    const cls = mode === 'new' && k === fill - 1 ? 'ff ffnew' : 'ff';
+    const st = mode === 'fly' ? `--dx:${((k % 5) - 2) * 14}px;animation-delay:${(k * .09).toFixed(2)}s` : `animation-delay:${((k * .37) % 3).toFixed(2)}s`;
+    ff += `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFC85A;opacity:.28"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFDE8A;opacity:.6"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>`;
   }
-  const ivory = '#F4ECDF';
+  const iv = '#F7EEDF', warm = (.18 + .62 * g * bright).toFixed(2);
   return `<svg class="lampsvg ${mode === 'fly' ? 'flying' : ''}" viewBox="0 0 120 120" aria-hidden="true">
-    <defs><radialGradient id="lg-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
-    <ellipse cx="60" cy="110" rx="25" ry="3.2" style="fill:#000;opacity:.22"/>
-    ${fill ? `<circle cx="60" cy="68" r="50" fill="url(#lg-${id})" style="opacity:${(.2 + .8 * g * bright).toFixed(2)}"/>` : ''}
-    <circle cx="60" cy="15" r="9" style="fill:none;stroke:${ivory};stroke-width:3.4;opacity:.92"/>
-    <path d="M51 30 C 51 21.5, 69 21.5, 69 30 Z" style="fill:${ivory}"/>
-    <path d="M28 40.5 C 32 28, 88 28, 92 40.5 C 92 44, 28 44, 28 40.5 Z" style="fill:${ivory}"/>
-    <path d="M35 43.5 C 22 58, 24 88, 38 97 L82 97 C 96 88, 98 58, 85 43.5 Z" style="fill:#FFE9C2;fill-opacity:${(.1 + .28 * g).toFixed(2)};stroke:${ivory};stroke-opacity:.75;stroke-width:1.4"/>
+    <defs><radialGradient id="lg-${id}"><stop offset="0" style="stop-color:#FFD98A;stop-opacity:.6"/><stop offset="1" style="stop-color:#FFD98A;stop-opacity:0"/></radialGradient>
+      <radialGradient id="lb-${id}" cx=".5" cy=".9" r=".85"><stop offset="0" style="stop-color:#FFF3C8;stop-opacity:${warm}"/><stop offset=".55" style="stop-color:#FBE3BC;stop-opacity:${(warm * .55).toFixed(2)}"/><stop offset="1" style="stop-color:#EDE6FF;stop-opacity:.12"/></radialGradient></defs>
+    <ellipse cx="60" cy="111" rx="24" ry="3" style="fill:#000;opacity:.18"/>
+    <circle cx="60" cy="70" r="56" fill="url(#lg-${id})" style="opacity:${(.15 + .85 * g * bright).toFixed(2)}"/>
+    <circle cx="60" cy="14.5" r="8.5" style="fill:none;stroke:${iv};stroke-width:4"/>
+    <path d="M50.5 30 C 50.5 21, 69.5 21, 69.5 30 Z" style="fill:${iv}"/>
+    <path d="M27 41 C 31 27.5, 89 27.5, 93 41 C 93 45, 27 45, 27 41 Z" style="fill:${iv}"/>
+    <path d="M34.5 44 C 21 58, 23 88, 38 97 L82 97 C 97 88, 99 58, 85.5 44 Z" style="fill:url(#lb-${id});stroke:${iv};stroke-width:4.2;stroke-linejoin:round"/>
+    <path d="M38 52 C 31 62, 31 78, 37 88" style="fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;opacity:.35"/>
     ${ff}
-    <rect x="35" y="95.5" width="50" height="9.5" rx="4.7" style="fill:${ivory}"/></svg>`;
+    <rect x="34" y="94.5" width="52" height="10.5" rx="5.2" style="fill:${iv}"/></svg>`;
 }
 const LSIZES = [[7,'A week'],[21,'Three weeks'],[30,'A month'],[40,'Forty days'],[100,'A hundred days']];
 function lampCard(){
