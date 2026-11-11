@@ -90,6 +90,9 @@ h3{font-size:17px;line-height:1.35}
 .lsizes button[aria-pressed=true]{border-color:var(--lamp-glow);background:var(--surface)}
 .lsizes button:disabled{opacity:.4}
 .lsizes .lampsvg{width:44px;height:44px}
+.youcard ul{margin:8px 0 10px;padding:0;list-style:none}
+.youcard li{position:relative;padding:5px 0 5px 20px;font-size:15px;line-height:1.45}
+.youcard li::before{content:"";position:absolute;left:2px;top:12px;width:7px;height:7px;border-radius:50%;background:var(--lamp-glow);box-shadow:0 0 8px var(--lamp-glow)}
 .trybox{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--field);border:1px solid var(--line);font-size:14.5px;line-height:1.45}
 .trybox span{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--lamp);margin-bottom:3px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -342,6 +345,8 @@ body.flowing .app{visibility:hidden}
 .fl .grow{flex:1}
 .fl-foot{display:flex;flex-direction:column;gap:10px}
 .fl-skip{background:none;border:0;color:var(--muted);font-size:14px;padding:6px;align-self:center}
+.breath-go{opacity:.35}
+.breath-go.shown{opacity:1}
 .welcome-go{opacity:0;pointer-events:none;transition:opacity 1.2s}
 .welcome-go.shown{opacity:1;pointer-events:auto}
 .fl-breath{display:grid;place-items:center;height:230px;position:relative}
@@ -1021,6 +1026,24 @@ function ritualCard(){
     ${eve ? `<p class="opt-label" style="margin-top:12px">Did you try it?</p><div class="row3"><button class="btn glow" data-act="lived" data-a="yes">Yes</button><button class="btn ghost" data-act="lived" data-a="some">A little</button><button class="btn ghost" data-act="lived" data-a="no">Not today</button></div>`
       : `<div class="foot"><span class="small">This evening, I’ll ask how it went.</span><button class="link" data-act="nextQuote">Another</button></div>`}</section>`;
 }
+function todayYou(){
+  const t = TODAY(), out = [], L = (S.lived || {})[t];
+  if (S.intentions[t]) out.push(`You chose to be <em>${esc(S.intentions[t].toLowerCase())}</em>.`);
+  if (L) out.push(L.a === 'yes' ? `You tried today’s thought: “${esc(L.tr.split(/(?<=[.?])\s/)[0])}”` : L.a === 'some' ? 'You tried today’s thought, a little.' : 'You were honest about not trying today.');
+  const sm = S.silence.filter(x => x.date === t).reduce((a, x) => a + x.min, 0); if (sm) out.push(`You were still for ${plural(sm, 'minute')}.`);
+  const kept = S.practices.filter(p => p.checks.includes(t)); if (kept.length) out.push(`You kept your promise: ${esc(kept[0].t.toLowerCase())}.`);
+  const lit = S.lamps.filter(l => l.date === t).length; if (lit) out.push(`You sent a little light to ${lit === 1 ? 'someone' : lit + ' people'}.`);
+  if (S.reflections.some(r => r.date === t && r.grat)) out.push('You noticed something good.');
+  const m = S.reflections.filter(r => r.date === t && r.mood).slice(-1)[0]; if (m) { const ml = (MOODS.find(x => x.id === m.mood) || {}).l; if (ml) out.push(`You named how you felt: ${ml.toLowerCase()}.`); }
+  if (S.released.includes(t)) out.push('You let something go.');
+  return out;
+}
+function todayYouCard(){
+  const items = todayYou(), h = HOUR();
+  if (items.length < 2 || !(h >= 17 || h < 5)) return '';
+  return `<section class="card youcard"><p class="eyebrow go">Today, you</p><ul>${items.map(x => `<li>${x}</li>`).join('')}</ul>
+    <p class="small">Small steps, and each one counts. This is what a better day looks like.</p></section>`;
+}
 function saveLived(a){ const t = TODAY(), q = quote(); S.lived = S.lived || {}; S.lived[t] = {q:q.text, src:q.src, tr:tryFor(q), a}; save(); }
 function wisdomCard(){
   const q = quote();
@@ -1074,6 +1097,7 @@ function viewToday(){
       <button class="pill" data-act="lanternSize">${lanternSVG(lantern().fill, lantern().size, L.bright, 'pill')}${lantern().fill ? `${lantern().fill} of ${lantern().size} lights` : 'Your lantern is waiting'}</button></section>
     ${lantern().full ? lampCard() : ''}
     ${first ? stepCard(j) : ''}
+    ${todayYouCard()}
     ${!first || (S.journey.done[1] && S.journey.done[1] < t) ? ritualCard() : ''}
     ${first ? '' : nowCard()}
     ${!first || S.journey.done[1] ? pageCard() : ''}
@@ -1517,29 +1541,30 @@ function planFlow(){
     if (!d.refl) return {kind:'evening', steps:[...((S.lived || {})[TODAY()] ? [] : ['lived']), 'mood','q0','q1','q2','keep','stone'], cta:'Close your day', sub:'Three short questions, then rest.'};
     return {kind:'evening', steps:[], cta:'Wind down for sleep', act:'sleep', sub:'Your day is closed.'};
   }
-  return d.intent ? {kind:'morning', steps:['carry','done'], cta:'Continue', sub:`Your word today: ${d.intent}`}
-                  : {kind:'morning', steps:['word','carry','stone'], cta:'Begin your day', sub:'One breath, one word, one question.'};
+  const br = S.silence.some(x => x.date === TODAY()) ? [] : ['breath1'];
+  return d.intent ? {kind:'morning', steps:[...br, 'carry','done'], cta:'Continue', sub:`Your word today: ${d.intent}`}
+                  : {kind:'morning', steps:[...br, 'word','carry','stone'], cta:'Begin your day', sub:'One quiet minute, one word, one thing to try.'};
 }
 function openFlow(withArrival){
   const p = planFlow();
   if (!withArrival && !p.steps.length) { flowAct(p.act); return; }
   flow = Object.assign(p, {i: withArrival ? -1 : 0, data:{mood:null, a:['','','']}}); renderFlow();
 }
-let welcomeT = [];
+let welcomeT = [], breathT = [];
 function welcomeVoice(){
   welcomeT.forEach(clearTimeout); welcomeT = [];
   [[800,'You’re here. That’s already a good step.'],[6000,'Breathe in slowly, all the way down.'],[12000,'And let it go.'],[18000,'Nothing to fix. Nothing to achieve. Just this breath.']]
     .forEach(([ms, line]) => welcomeT.push(setTimeout(() => { if (flow && flow.welcome && flow.i === -1) speak(line); }, ms)));
   welcomeT.push(setTimeout(() => { const g = document.querySelector('.welcome-go'); if (g) g.classList.add('shown'); }, 22000));
 }
-function welcomeStop(){ welcomeT.forEach(clearTimeout); welcomeT = []; voStop(); }
+function welcomeStop(){ welcomeT.forEach(clearTimeout); welcomeT = []; breathT.forEach(clearTimeout); breathT = []; voStop(); }
 function closeFlow(){ welcomeStop(); flow = null; renderFlow(); render(); }
 function flowAct(act){
   if (act === 'sleep') { setSil('sleep', 20, 'ocean'); sil.voice = true; go('silence'); }
   else if (act === 'sleepRain') { setSil('sleep', 20, 'rain'); sil.voice = true; go('silence'); }
   else closeFlow();
 }
-function flowNext(){ flow.i++; if (flow.i >= flow.steps.length) closeFlow(); else renderFlow(); }
+function flowNext(){ welcomeStop(); flow.i++; if (flow.i >= flow.steps.length) closeFlow(); else renderFlow(); }
 function renderFlow(){
   const el = document.getElementById('flow'); clearInterval(flowIv); document.body.classList.toggle('flowing', !!flow);
   if (!flow) { el.innerHTML = ''; return; }
@@ -1551,6 +1576,12 @@ function renderFlow(){
   const h = HOUR(), hello = h < 5 ? 'Still awake' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
   let body = '', foot = '';
   switch (step) {
+    case 'breath1':
+      body = `<div class="grow"></div><div class="fl-breath"><div class="ring"></div><div class="lbl" id="flbl">Breathe in</div></div>
+        <p class="eyebrow go" style="text-align:center">One quiet minute</p><p class="lede" style="text-align:center">Before the day begins. Just breathe with the circle.</p>
+        <p class="small" style="text-align:center" id="b1left">1:00</p><div class="grow"></div>`;
+      foot = `<button class="btn glow wide breath-go" data-act="breathDone">Continue</button><button class="fl-skip" data-act="flowNext">Skip</button>`;
+      break;
     case 'arrive':
       if (flow.welcome) {
         body = `<div class="grow"></div><div class="fl-breath"><div class="ring"></div><div class="lbl" id="flbl">Take a breath</div></div>
@@ -1619,11 +1650,18 @@ function renderFlow(){
       else if (jj.phase === 'first') { title = 'A firefly for your lantern'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow your lantern gets light number ${lantern().fill + 1}. ${TEASE[jj.n] || ''}`; }
       else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the path begins. Each week, a new theme for your evenings; your lantern keeps filling.'; }
       else { title = 'A firefly for your lantern'; text = 'That’s all for now. This evening, three short questions close your day.'; }
-      body = `<div class="grow"></div><div class="stonebox">${lanternSVG(lantern().fill, lantern().size, 1, 'fl', 'new')}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
+      body = `<div class="grow"></div><div class="stonebox">${lanternSVG(lantern().fill, lantern().size, 1, 'fl', 'new')}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' && todayYou().length >= 2 ? `<section class="card youcard" style="text-align:left"><p class="eyebrow go">Today, you</p><ul>${todayYou().map(x => `<li>${x}</li>`).join('')}</ul></section>` : ''}${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
       break; }
   }
   el.innerHTML = `<div class="fl" role="dialog" aria-modal="true"><div class="fl-in">${step === 'burn' ? '' : top}${body}<div class="fl-foot">${foot}</div></div></div>`;
+  if (step === 'breath1') { const t0 = Date.now(); clearInterval(flowIv); breathT.forEach(clearTimeout); breathT = [];
+    [[500,'Good morning. Before the day begins, let’s take one quiet moment.'],[9000,'Breathe in slowly, all the way down.'],[16000,'And let it go.'],[30000,'Nothing to fix. Nothing to achieve. Just this breath.']]
+      .forEach(([ms, line]) => breathT.push(setTimeout(() => { if (flow && flow.steps[flow.i] === 'breath1') speak(line); }, ms)));
+    flowIv = setInterval(() => { const l = document.getElementById('flbl'), c = document.getElementById('b1left'); if (!l) return clearInterval(flowIv);
+      const e = (Date.now() - t0) / 1000; l.textContent = (e % 10) < 4 ? 'Breathe in' : 'Breathe out';
+      const left = Math.max(0, 60 - Math.floor(e)); if (c) c.textContent = left ? `0:${pad(left)}` : 'Well done';
+      if (left === 0) { const g = document.querySelector('.breath-go'); if (g) g.classList.add('shown'); } }, 250); }
   if (step === 'arrive') { const t0 = Date.now(); flowIv = setInterval(() => { const l = document.getElementById('flbl'); if (!l) return clearInterval(flowIv);
     const el2 = (Date.now() - t0) / 1000; if (el2 > 3) l.textContent = (el2 % 10) < 4 ? 'Breathe in' : 'Breathe out'; }, 250); }
 }
@@ -1926,6 +1964,7 @@ document.addEventListener('click', e => {
     case 'saveIntent': { const el = document.getElementById('intent'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
       S.intentions[t] = v; save(); stepHook('intent'); sheet = null; render(); toast('Today’s word: ' + v); break; }
     case 'lived': { saveLived(b.dataset.a); render(); toast(b.dataset.a === 'no' ? 'Thank you for being honest' : 'A light for your lantern'); break; }
+    case 'breathDone': { welcomeStop(); const t = TODAY(); if (!S.silence.some(x => x.date === t)) { S.silence.push({date:t, min:1}); save(); } flowNext(); break; }
     case 'livedFlow': saveLived(b.dataset.a); flowNext(); break;
     case 'nextQuote': S.qoff++; save(); render(); break;
     case 'lightLamp': { const el = document.getElementById('lampfor'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
