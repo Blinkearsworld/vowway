@@ -73,7 +73,7 @@ h3{font-size:17px;line-height:1.35}
 /* cards */
 .card{background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
 .card.quiet{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;border-style:dashed}
-.card.now{box-shadow:inset 0 0 0 1px var(--lamp-glow),0 10px 30px -18px var(--lamp-glow)}
+.card.now{border-color:color-mix(in srgb,var(--lamp-glow) 38%,transparent);box-shadow:0 14px 40px -24px var(--lamp-glow)}
 .ff{animation:ffl 3.2s ease-in-out infinite}
 .ffnew{animation:ffin 1.8s cubic-bezier(.2,.8,.2,1),ffl 3.2s 1.8s ease-in-out infinite}
 .flying .ff{animation:flyup 2.6s ease-in forwards}
@@ -160,6 +160,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
 details.more-today summary{cursor:pointer;list-style:none;text-align:center;font-size:14px;color:var(--muted);padding:10px;border:1px dashed var(--line);border-radius:16px}
 details.more-today summary::-webkit-details-marker{display:none}
 details.more-today[open] summary{border-style:solid}
+.card{border-color:color-mix(in srgb,var(--line) 65%,transparent);padding:20px;box-shadow:0 10px 30px -26px rgba(0,0,0,.6)}
+.stack{gap:16px}
+.eyebrow{letter-spacing:.06em;opacity:.85}
+.small{line-height:1.5}
+.btn{transition:transform .15s ease,opacity .2s ease}.btn:active{transform:scale(.98)}
 details.roots{font-size:12.5px;color:var(--muted)}
 details.roots summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px}
 details.roots summary::-webkit-details-marker{display:none}
@@ -894,13 +899,40 @@ function lanternSVG(fill, size, bright=1, id='g', mode=''){
     ${ff}</svg>`;
 }
 const LSIZES = [[7,'A week'],[21,'Three weeks'],[30,'A month'],[40,'Forty days'],[100,'A hundred days']];
+async function sharePath(){
+  const n = lampState().total, W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#34477A'); g.addColorStop(.55, '#8C7BA6'); g.addColorStop(1, '#E3B08C'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  const glow = x.createRadialGradient(W*.72, H*.2, 0, W*.72, H*.2, 260); glow.addColorStop(0, 'rgba(255,236,200,.55)'); glow.addColorStop(1, 'rgba(255,236,200,0)'); x.fillStyle = glow; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#F6EBD6'; x.beginPath(); x.arc(W*.72, H*.2, 54, 0, 6.283); x.fill();
+  const ridge = (pts, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(0, H); pts.forEach(([a, b]) => x.lineTo(a*W, b*H)); x.lineTo(W, H); x.closePath(); x.fill(); };
+  ridge([[0,.66],[.18,.55],[.33,.63],[.52,.5],[.7,.61],[.86,.53],[1,.6]], 'rgba(70,74,120,.55)');
+  ridge([[0,.74],[.22,.66],[.42,.73],[.63,.64],[.82,.72],[1,.67]], 'rgba(42,48,88,.75)');
+  x.fillStyle = 'rgba(25,30,58,.9)'; x.fillRect(0, H*.8, W, H*.2);
+  const k = Math.max(1, stonesFor(n)), cx = W/2; let y = H*.79, sc = k > 7 ? 6.3 : 7.2;
+  x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(cx, y + 14, 34*sc*.5*1.9, 26, 0, 0, 6.283); x.fill();
+  for (let i = 0; i < k; i++) { const w = (46 - i*3.4)*sc, h = (12.5 - i*.45)*sc, sx = cx + ((i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0))*sc, cy = y - h/2, top = i === k - 1;
+    const special = !top && ({1: n >= 7 && '#D9B26A', 2: n >= 40 && '#93A9BF', 0: n >= 100 && '#EFE8DA', 3: n >= 365 && '#C8A3A0'})[i];
+    if (top) { const gl = x.createRadialGradient(sx, cy, 0, sx, cy, 200); gl.addColorStop(0, 'rgba(255,204,120,.6)'); gl.addColorStop(1, 'rgba(255,204,120,0)'); x.fillStyle = gl; x.fillRect(sx-200, cy-200, 400, 400); }
+    x.fillStyle = top ? '#F2B65A' : special || '#EDE6DA'; x.beginPath(); x.ellipse(sx, cy, w/2, h/2, 0, 0, 6.283); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.ellipse(sx - w*.12, cy - h*.18, w*.22, h*.14, 0, 0, 6.283); x.fill(); y -= h*.9; }
+  x.textAlign = 'center'; x.fillStyle = '#FFF8EE';
+  x.font = '500 120px Newsreader, Georgia, serif'; x.fillText(`${n} ${n === 1 ? 'day' : 'days'}`, W/2, 250);
+  x.font = 'italic 52px Newsreader, Georgia, serif'; x.fillStyle = 'rgba(255,248,238,.9)'; x.fillText('on my path', W/2, 325);
+  x.font = '500 54px Newsreader, Georgia, serif'; x.fillStyle = '#FFF8EE'; x.fillText('vow · way', W/2, H - 120);
+  x.font = '30px "Instrument Sans", system-ui, sans-serif'; x.fillStyle = 'rgba(255,248,238,.75)'; x.fillText('A small vow, every day', W/2, H - 70);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png')), name = `vowway-${n}-days.png`;
+  try { const f = new File([blob], name, {type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[f]})) { await navigator.share({files:[f], text:`${n} days on my path · vowway ${APP_URL}`}); return; } } catch(e){ if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); toast('Picture saved');
+}
 function lampCard(){
   const L = lampState();
   const next = MILES.find(m => m > L.total) || (Math.ceil((L.total+1)/365)*365);
   const msg = L.total === 0 ? 'No stones yet. Your first step places the first one.' : L.gap >= 3 ? 'The path waited for you. Add a stone when you’re ready.' : L.bright < .75 ? 'Add a stone today, even a small one.' : 'Your cairn is growing.';
   return `<section class="card lampcard">${lampSVG(L.bright, 'main', L.total)}
     <div><p class="big">${L.total} <span>${L.total === 1 ? 'day' : 'days'} on the path</span></p><p class="small">${msg}</p>
-    <span class="next-stone"><b></b>Next marker: ${next} days</span></div></section>`;
+    <span class="next-stone"><b></b>Next marker: ${next} days</span>
+    ${L.total >= 3 ? '<button class="link" data-act="sharePath" style="margin-top:6px">Share your path ›</button>' : ''}</div></section>`;
 }
 function sheetLantern(){
   const F = lantern();
@@ -1695,9 +1727,9 @@ function renderFlow(){
       else { title = 'A stone on your path'; text = 'That’s all for now. This evening, three short questions close your day.'; }
       { const MS = {7:['A golden stone','Seven days. This one stays in your cairn, golden, so you remember where it began.'], 40:['A mountain stone','Forty days. An old number for a real change. This stone stays, the colour of the mountains.'],
           100:['A white stone','A hundred days. Look how far you’ve walked. This stone stays white, like a fresh start you kept.'], 365:['A stone for a year','A whole year on the path. Thank you for walking it.']}[lampState().total];
-        if (MS && flow.kind !== 'evening') { title = MS[0]; text = MS[1]; } }
+        if (MS && flow.kind !== 'evening') { title = MS[0]; text = MS[1]; flow.share = true; } }
       body = `<div class="grow"></div><div class="stonebox">${lampSVG(1, 'fl', L.total)}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' && todayYou().length >= 2 ? `<section class="card youcard" style="text-align:left"><p class="eyebrow go">Today, you</p><ul>${todayYou().map(x => `<li>${x}</li>`).join('')}</ul></section>` : ''}${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
-      foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
+      foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>${flow.share ? '<button class="fl-skip" data-act="sharePath">Share this stone</button>' : ''}`;
       break; }
   }
   el.innerHTML = `<div class="fl" role="dialog" aria-modal="true"><div class="fl-in">${step === 'burn' ? '' : top}${body}<div class="fl-foot">${foot}</div></div></div>`;
@@ -1945,6 +1977,7 @@ document.addEventListener('click', e => {
     case 'setLantern': { const k = +b.dataset.k; lantern(); S.lantern.size = k; save(); sheet = null; render(); toast(`A lantern for ${k} days`); break; }
     case 'flyLantern': { const F = lantern(); if (!F.full) break; flown = F.size; S.freed = (S.freed || 0) + F.size; S.lanternsDone = (S.lanternsDone || 0) + 1;
       S.lantern = {start:add(TODAY(), 1), size:F.size}; save(); sheet = 'fly'; render(); break; }
+    case 'sharePath': sharePath(); break;
     case 'pathView': pathView = b.dataset.k; render(); break;
     case 'newVow': sheet = 'newvow'; renderSheet(); break;
     case 'goVows': go('path'); pathView = 'vows'; sheet = 'newvow'; render(); break;
