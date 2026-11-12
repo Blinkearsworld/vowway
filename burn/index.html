@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#0E0D18">
+<title>Set it down · vowway</title>
+<style>
+@font-face{font-family:'Hand';src:url('caveat.woff2') format('woff2');font-weight:400 700;font-display:block}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0E0D18;overflow:hidden;color:#EFE6D2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;overscroll-behavior:none}
+#room{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;transition:filter 1.2s ease,transform 1.2s ease;user-select:none;-webkit-user-drag:none}
+body.writing #room{filter:blur(6px) brightness(.55);transform:scale(1.04)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+#glow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
+/* the page */
+#sheetWrap{position:fixed;inset:0;z-index:2;pointer-events:none}
+#sheet{position:absolute;left:0;top:0;transform-origin:50% 50%;pointer-events:auto;touch-action:none;border-radius:3px;
+  background:#F4ECDC;
+  background-image:
+    radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.5),transparent 60%),
+    radial-gradient(ellipse at 80% 90%,rgba(170,140,100,.18),transparent 55%),
+    repeating-linear-gradient(to bottom,transparent 0,transparent 37px,rgba(90,110,150,.22) 37px,rgba(90,110,150,.22) 38px);
+  background-position:0 0,0 0,0 22px;
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 18px 40px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.3)}
+#sheet::before{content:'';position:absolute;left:38px;top:0;bottom:0;width:1px;background:rgba(200,90,90,.25)}
+#text{position:absolute;inset:0;width:100%;height:100%;padding:22px 20px 20px 50px;border:0;outline:0;resize:none;background:transparent;
+  font-family:'Hand',cursive;font-size:27px;line-height:38px;color:#2B2A44;caret-color:#7A5A2A}
+#text::placeholder{color:rgba(43,42,68,.38)}
+#sheet.onTable #text{pointer-events:none}
+#sheet.ignite{animation:flash .32s ease-in forwards}
+@keyframes flash{0%{filter:brightness(1)}35%{filter:brightness(2.4) sepia(1) saturate(3) hue-rotate(-10deg);opacity:1}100%{filter:brightness(4) sepia(1) saturate(4);opacity:0;transform:var(--t) scale(1.06)}}
+
+/* ui */
+.ui{position:fixed;left:0;right:0;z-index:4;text-align:center;padding:0 24px;transition:opacity .8s ease}
+.top{top:calc(env(safe-area-inset-top) + 18px);padding:0 52px}
+.bottom{bottom:calc(env(safe-area-inset-bottom) + 22px)}
+.hidden{opacity:0;pointer-events:none}
+.hint{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:19px;line-height:1.4;color:#F3E2C4;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.small{font-size:13.5px;color:rgba(239,230,210,.62);margin-top:8px;font-style:normal;font-family:inherit}
+.btn{appearance:none;border:0;border-radius:16px;padding:15px 22px;font:600 16px/1 inherit;font-family:inherit;cursor:pointer}
+.btn.gold{background:#F2B35A;color:#2A1D10;box-shadow:0 8px 30px rgba(242,179,90,.25);width:100%;max-width:420px}
+.btn.ghost{background:transparent;color:rgba(239,230,210,.7)}
+.close{position:fixed;z-index:5;top:calc(env(safe-area-inset-top) + 10px);left:12px;background:rgba(14,13,24,.35);border:0;color:#EFE6D2;width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;backdrop-filter:blur(6px)}
+.after h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:30px;margin:0 0 10px;color:#F6EBD6}
+.after p{font-size:16px;line-height:1.5;color:rgba(239,230,210,.78);margin:0 auto;max-width:330px}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.6}}
+</style>
+</head>
+<body class="writing">
+<img id="room" src="room.jpg" alt="">
+<canvas id="glow"></canvas>
+<div id="sheetWrap"><div id="sheet"><textarea id="text" spellcheck="false" autocomplete="off" autocorrect="off" placeholder="Write what weighs on you.&#10;No one will read it.&#10;Nothing is saved."></textarea></div></div>
+<canvas id="fx"></canvas>
+
+<button class="close" id="close" aria-label="Close">×</button>
+<div class="ui top" id="topWrite"><div class="hint">Say it here. Then let it go.</div></div>
+<div class="ui bottom" id="bottomWrite"><button class="btn gold" id="done">I’m done</button></div>
+<div class="ui top hidden" id="topTable"><div class="hint pulse">Hold the page and bring it to the flame.</div><div class="small">It will be gone. Nothing is kept.</div></div>
+<div class="ui top hidden after" id="after" style="top:calc(env(safe-area-inset-top) + 16vh)"><h1>It’s gone.</h1><p>You set it down. You don’t have to carry it alone tonight.</p></div>
+<div class="ui bottom hidden" id="bottomAfter"><button class="btn gold" id="again">Back to my day</button><br><button class="btn ghost" id="more">Write another</button></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const room = $('room'), fx = $('fx'), gl = $('glow'), sheet = $('sheet'), text = $('text');
+const ctx = fx.getContext('2d'), gctx = gl.getContext('2d');
+const IMG = {w:941, h:1672, wickX:674, wickY:903, tableY:1045};
+let W, H, DPR, S, OX, OY, wick = {x:0, y:0}, flameH = 50;
+let mode = 'write';           // write | table | burning | after
+let rest = {x:0, y:0, w:0, h:0, sc:.4}, pos = {x:0, y:0}, drag = null, lift = 0;
+const sparks = [], smoke = [], fire = [];
+let flare = 0, flarePos = {x:0, y:0}, flameBoost = 0;
+
+function layout(){
+  W = innerWidth; H = innerHeight; DPR = Math.min(2, devicePixelRatio || 1);
+  for (const c of [fx, gl]) { c.width = W * DPR; c.height = H * DPR; }
+  ctx.setTransform(DPR,0,0,DPR,0,0); gctx.setTransform(DPR,0,0,DPR,0,0);
+  S = Math.max(W / IMG.w, H / IMG.h); OX = (W - IMG.w * S) / 2; OY = (H - IMG.h * S) / 2;
+  wick = {x: OX + IMG.wickX * S, y: OY + IMG.wickY * S};
+  flameH = 118 * S;
+  // writing size of the page
+  const pw = Math.min(W - 28, 440), ph = Math.min(H - 190, 640);
+  sheet.style.width = pw + 'px'; sheet.style.height = ph + 'px';
+  // resting place on the table, left of the candle
+  const tableTop = OY + IMG.tableY * S;
+  rest.sc = Math.min(.42, (wick.x - 30) / pw * .66);
+  rest.w = pw; rest.h = ph;
+  rest.x = Math.max(14, (wick.x - 40) / 2 - pw * rest.sc / 2) ;
+  rest.y = tableTop + (H - tableTop) * .34 - ph * rest.sc / 2;
+  if (mode === 'write') place();
+  else if (mode === 'table' && !drag) { pos = {x:rest.x, y:rest.y}; place(); }
+}
+function place(){
+  let t;
+  if (mode === 'write') {
+    const pw = parseFloat(sheet.style.width), ph = parseFloat(sheet.style.height);
+    t = `translate(${(W - pw) / 2}px, ${Math.max(70, (H - ph) / 2 - 30)}px)`;
+  } else {
+    // lying on the table it leans back; lifted, it faces you
+    const sc = rest.sc * (1 + lift * .12), rx = 64 * (1 - lift), rz = -7 * (1 - lift) + 3 * lift;
+    const ox = rest.w * (1 - sc) / 2, oy = rest.h * (1 - sc) / 2;
+    t = `translate(${pos.x - ox}px, ${pos.y - oy}px) scale(${sc}) perspective(1500px) rotateX(${rx}deg) rotateZ(${rz}deg)`;
+  }
+  sheet.style.setProperty('--t', t);
+  sheet.style.transform = t;
+}
+addEventListener('resize', layout);
+if (window.visualViewport) visualViewport.addEventListener('resize', layout);
+
+/* ---------- writing → table ---------- */
+$('done').onclick = () => {
+  text.blur(); text.readOnly = true;
+  mode = 'table'; document.body.classList.remove('writing');
+  $('topWrite').classList.add('hidden'); $('bottomWrite').classList.add('hidden');
+  sheet.classList.add('onTable');
+  sheet.style.transition = 'transform 1.1s cubic-bezier(.3,.7,.2,1)';
+  setTimeout(() => { pos = {x:rest.x, y:rest.y}; lift = 0; place(); }, 30);
+  setTimeout(() => { sheet.style.transition = ''; $('topTable').classList.remove('hidden'); }, 1150);
+  audio();
+};
+
+/* ---------- drag ---------- */
+sheet.addEventListener('pointerdown', e => {
+  if (mode !== 'table') return;
+  e.preventDefault(); sheet.setPointerCapture(e.pointerId);
+  drag = {dx: e.clientX - pos.x, dy: e.clientY - pos.y, id: e.pointerId};
+  sheet.style.transition = 'transform .25s ease-out';
+  lift = 1; place(); setTimeout(() => { if (drag) sheet.style.transition = ''; }, 250);
+  $('topTable').classList.add('hidden');
+});
+sheet.addEventListener('pointermove', e => {
+  if (!drag || mode !== 'table') return;
+  pos = {x: e.clientX - drag.dx, y: e.clientY - drag.dy}; place();
+  // does the page touch the flame?
+  const r = sheet.getBoundingClientRect(), fx_ = wick.x, fy = wick.y - flameH * .55, m = flameH * .25;
+  if (fx_ > r.left - m && fx_ < r.right + m && fy > r.top - m && fy < r.bottom + m) ignite(r);
+});
+const drop = () => {
+  if (!drag || mode !== 'table') return; drag = null;
+  sheet.style.transition = 'transform .9s cubic-bezier(.3,.7,.2,1)';
+  pos = {x:rest.x, y:rest.y}; lift = 0; place();
+  setTimeout(() => { sheet.style.transition = ''; $('topTable').classList.remove('hidden'); }, 900);
+};
+sheet.addEventListener('pointerup', drop); sheet.addEventListener('pointercancel', drop);
+
+/* ---------- flash ---------- */
+function ignite(r){
+  mode = 'burning'; drag = null;
+  sheet.classList.add('ignite');
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  flare = 1; flarePos = {x: cx, y: cy}; flameBoost = 1;
+  // a burst of fire over the whole page
+  for (let i = 0; i < 140; i++) fire.push({x: r.left + Math.random() * r.width, y: r.top + Math.random() * r.height,
+    vx: (Math.random() - .5) * 60, vy: -60 - Math.random() * 160, r: 14 + Math.random() * 26, life: 0, max: .3 + Math.random() * .4});
+  // sparks that drift up slowly
+  for (let i = 0; i < 170; i++) sparks.push({x: r.left + Math.random() * r.width, y: r.top + Math.random() * r.height,
+    vx: (Math.random() - .5) * 90, vy: -30 - Math.random() * 120, r: .7 + Math.random() * 1.6, life: 0,
+    max: 1.6 + Math.random() * 3.4, ph: Math.random() * 6.28, f: 1.5 + Math.random() * 3, tw: 8 + Math.random() * 14});
+  // a little white smoke
+  for (let i = 0; i < 40; i++) smoke.push({x: r.left + Math.random() * r.width, y: r.top + r.height * (.2 + Math.random() * .7),
+    vx: (Math.random() - .5) * 14, vy: -14 - Math.random() * 22, r: 6 + Math.random() * 10, life: -Math.random() * .5,
+    max: 3 + Math.random() * 3, ph: Math.random() * 6.28});
+  whoosh();
+  if (navigator.vibrate) navigator.vibrate(18);
+  setTimeout(() => { text.value = ''; sheet.style.visibility = 'hidden'; sheet.classList.remove('ignite'); }, 340);
+  setTimeout(() => { mode = 'after'; $('after').classList.remove('hidden'); }, 2300);
+  setTimeout(() => $('bottomAfter').classList.remove('hidden'), 3200);
+}
+
+/* ---------- drawing ---------- */
+let last = performance.now(), T = 0;
+const n1 = t => Math.sin(t * 1.7) * .5 + Math.sin(t * 3.1 + 1.3) * .3 + Math.sin(t * 7.3 + .4) * .2;
+function drawFlame(t){
+  const x = wick.x, y = wick.y, h = flameH * (1 + flameBoost * .25) * (1 + n1(t * 1.3) * .06);
+  const sway = n1(t * .9 + 4) * h * .07, w = h * .25;
+  // glow on the room
+  gctx.clearRect(0, 0, W, H);
+  const gi = .5 + n1(t * 2.2) * .07 + flameBoost * .3;
+  let g = gctx.createRadialGradient(x, y - h * .5, 0, x, y - h * .5, h * 6.5);
+  g.addColorStop(0, `rgba(255,170,80,${.32 * gi})`); g.addColorStop(.25, `rgba(240,130,60,${.12 * gi})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  gctx.save(); gctx.globalCompositeOperation = 'lighter'; gctx.fillStyle = g; gctx.fillRect(0, 0, W, H); gctx.restore();
+
+  const c = gctx; c.save(); c.globalCompositeOperation = 'lighter';
+  g = c.createRadialGradient(x, y - h * .45, 0, x, y - h * .45, h * 1.5);
+  g.addColorStop(0, 'rgba(255,190,110,.35)'); g.addColorStop(1, 'rgba(255,140,60,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y - h * .45, h * 1.5, 0, 7); c.fill();
+  const shape = (s, col) => {
+    const hh = h * s, ww = w * s, tx = x + sway * s;
+    c.beginPath(); c.moveTo(x, y + hh * .06);
+    c.bezierCurveTo(x - ww * 1.15, y - hh * .05, x - ww * .9, y - hh * .55, tx, y - hh);
+    c.bezierCurveTo(x + ww * .9, y - hh * .55, x + ww * 1.15, y - hh * .05, x, y + hh * .06);
+    c.fillStyle = col; c.fill();
+  };
+  shape(1, 'rgba(255,120,30,.35)'); shape(.92, 'rgba(255,160,50,.45)'); shape(.78, 'rgba(255,205,110,.6)');
+  shape(.6, 'rgba(255,235,180,.75)'); shape(.42, 'rgba(255,250,235,.9)');
+  c.restore();
+  g = c.createRadialGradient(x, y + h * .02, 0, x, y + h * .02, w * .9);
+  g.addColorStop(0, 'rgba(70,110,255,.55)'); g.addColorStop(1, 'rgba(70,110,255,0)');
+  c.fillStyle = g; c.beginPath(); c.ellipse(x, y + h * .01, w * .9, h * .14, 0, 0, 7); c.fill();
+}
+function frame(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
+  ctx.clearRect(0, 0, W, H);
+  drawFlame(T);
+  flameBoost = Math.max(0, flameBoost - dt * 1.4);
+  // fire burst
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  if (flare > 0) {
+    const R = 140 + (1 - flare) * 120;
+    const g = ctx.createRadialGradient(flarePos.x, flarePos.y, 0, flarePos.x, flarePos.y, R);
+    g.addColorStop(0, `rgba(255,245,220,${.85 * flare})`); g.addColorStop(.35, `rgba(255,170,70,${.45 * flare})`); g.addColorStop(1, 'rgba(255,90,20,0)');
+    ctx.fillStyle = g; ctx.fillRect(flarePos.x - R, flarePos.y - R, R * 2, R * 2);
+    flare = Math.max(0, flare - dt * 2.6);
+  }
+  for (let i = fire.length - 1; i >= 0; i--) { const p = fire[i]; p.life += dt; const k = p.life / p.max;
+    if (k >= 1) { fire.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= 120 * dt;
+    const r = p.r * (1 - k * .6), a = (1 - k) * (k < .15 ? k / .15 : 1);
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+    g.addColorStop(0, `rgba(255,244,210,${.85 * a})`); g.addColorStop(.4, `rgba(255,165,55,${.55 * a})`); g.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill(); }
+  for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.life += dt; const k = p.life / p.max;
+    if (k >= 1) { sparks.splice(i, 1); continue; }
+    p.vx += Math.sin(T * p.f + p.ph) * 40 * dt; p.vx *= (1 - .9 * dt); p.vy = p.vy * (1 - .6 * dt) - 14 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    const tw = .55 + .45 * Math.sin(T * p.tw + p.ph), a = (1 - k) * (1 - k) * tw;
+    const c = k < .2 ? '255,248,225' : k < .5 ? '255,205,120' : '255,140,60';
+    ctx.fillStyle = `rgba(${c},${a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1 - k * .5), 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,170,80,${a * .12})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.6, 0, 7); ctx.fill(); }
+  ctx.restore();
+  for (let i = smoke.length - 1; i >= 0; i--) { const p = smoke[i]; p.life += dt; if (p.life < 0) continue; const k = p.life / p.max;
+    if (k >= 1) { smoke.splice(i, 1); continue; }
+    p.vx += Math.sin(T * .8 + p.ph) * 6 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += dt * 11;
+    const a = .1 * Math.sin(Math.PI * Math.min(1, k * 1.15));
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+    g.addColorStop(0, `rgba(240,238,244,${a})`); g.addColorStop(1, 'rgba(240,238,244,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- sound ---------- */
+let AC;
+function audio(){ try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch(e){} }
+function whoosh(){
+  if (!AC) return; const t = AC.currentTime, len = 1.6, b = AC.createBuffer(1, AC.sampleRate * len, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) { const k = i / d.length; d[i] = (Math.random() * 2 - 1) * (k < .03 ? k / .03 : Math.pow(1 - k, 2.4));
+    if (Math.random() < .0009 * (1 - k)) for (let j = 0; j < 60 && i + j < d.length; j++) d[i + j] += (Math.random() * 2 - 1) * .9 * (1 - j / 60); }
+  const s = AC.createBufferSource(); s.buffer = b;
+  const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = .7; f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(2600, t + .25); f.frequency.exponentialRampToValueAtTime(900, t + 1.4);
+  const g = AC.createGain(); g.gain.value = .55;
+  s.connect(f).connect(g).connect(AC.destination); s.start(t);
+}
+
+/* ---------- again ---------- */
+function reset(){
+  mode = 'write'; document.body.classList.add('writing');
+  sheet.className = ''; sheet.style.visibility = ''; sheet.style.transition = 'none'; text.readOnly = false; text.value = '';
+  ['after','bottomAfter','topTable'].forEach(i => $(i).classList.add('hidden'));
+  ['topWrite','bottomWrite'].forEach(i => $(i).classList.remove('hidden'));
+  layout(); place();
+}
+$('more').onclick = reset;
+$('again').onclick = reset;
+$('close').onclick = reset;
+
+layout(); place(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
