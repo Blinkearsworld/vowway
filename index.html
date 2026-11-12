@@ -845,20 +845,23 @@ const stonesFor = n => n <= 5 ? n : Math.min(10, 5 + Math.floor(Math.log2(n / 5)
 function lampSVG(bright, id='g', n=0){
   const k = stonesFor(n); let y = 106, out = '';
   for (let i=0;i<Math.max(k,1);i++){
-    const w = 46 - i * 3.4, h = 12.5 - i * .45, x = 60 + (i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0), cy = y - h/2;
+    const w = 40 - i * 3, h = 15.5 - i * .55, x = 60 + (i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0), cy = y - h/2;
     const top = i === k - 1;
     const special = !top && ({1: n >= 7 && '#D9B26A', 2: n >= 40 && '#93A9BF', 0: n >= 100 && '#EFE8DA', 3: n >= 365 && '#C8A3A0'})[i];
     const stone = k === 0
       ? `<ellipse cx="60" cy="${cy}" rx="${w/2}" ry="${h/2}" style="fill:none;stroke:var(--ink);stroke-dasharray:3 3;opacity:.55"/>`
       : `<ellipse cx="${x}" cy="${cy}" rx="${w/2}" ry="${h/2}" style="fill:${top ? 'var(--lamp-glow)' : special || 'var(--ink)'};opacity:${top ? (.55 + .45*bright).toFixed(2) : special ? .95 : (.82 - i*.03).toFixed(2)}"/>`
-        + `<ellipse cx="${x - w*.12}" cy="${cy - h*.18}" rx="${w*.22}" ry="${h*.14}" style="fill:#fff;opacity:.18"/>`;
+        + `<ellipse cx="${x}" cy="${cy}" rx="${w/2}" ry="${h/2}" fill="url(#shade-${id})"/>`
+        + `<ellipse cx="${x - w*.13}" cy="${cy - h*.2}" rx="${w*.2}" ry="${h*.13}" style="fill:#fff;opacity:.22"/>`;
     out += top && k && id === 'fl' ? `<g class="topstone">${stone}</g>` : stone;
     if (top && k) out = `<circle cx="${x}" cy="${cy}" r="${26}" fill="url(#glow-${id})" style="opacity:${bright.toFixed(2)}"/>` + out;
     y -= h * .9;
   }
+  if (k > 0 && k < 5 && id !== 'pill') for (let i = k; i < 5; i++) { const w = 40 - i * 3, h = 15.5 - i * .55, x = 60 + (i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0);
+    out += `<ellipse cx="${x}" cy="${y - h/2}" rx="${w/2}" ry="${h/2}" style="fill:none;stroke:var(--ink);stroke-width:.8;stroke-dasharray:2.5 3;opacity:.3"/>`; y -= h * .9; }
   return `<svg class="lampsvg" viewBox="0 0 120 120" aria-hidden="true">
-    <defs><radialGradient id="glow-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.6"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
-    <g transform="translate(0 ${id === 'pill' ? Math.min(0, 64 - (y + 106) / 2).toFixed(1) : 0})"><ellipse cx="60" cy="108" rx="34" ry="4" style="fill:#000;opacity:.25"/>${out}</g></svg>`;
+    <defs><linearGradient id="shade-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient><radialGradient id="glow-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.6"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
+    <g transform="translate(0 ${id === 'pill' ? Math.min(0, 64 - (y + 106) / 2).toFixed(1) : 0})"><g transform="${106 - y > 98 ? `translate(60 108) scale(${(98 / (106 - y)).toFixed(3)}) translate(-60 -108)` : ''}"><ellipse cx="60" cy="108" rx="34" ry="4" style="fill:#000;opacity:.25"/>${out}</g></g></svg>`;
 }
 /* the lantern: one firefly for each day you show up. You choose its size; the fireflies grow smaller
    in a bigger lantern, so it always fills exactly. When it is full, they fly off and become stars in your night sky. */
@@ -910,13 +913,13 @@ async function sharePath(){
   x.fillStyle = 'rgba(25,30,58,.9)'; x.fillRect(0, H*.8, W, H*.2);
   const k = Math.max(1, stonesFor(n)), cx = W/2; let y = H*.79, sc = k > 7 ? 6.3 : k <= 3 ? 5 : 6.4;
   x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(cx, y + 14, 34*sc*.5*1.9, 26, 0, 0, 6.283); x.fill();
-  for (let i = 0; i < k; i++) { const w = (46 - i*3.4)*sc, h = (12.5 - i*.45)*sc, sx = cx + ((i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0))*sc, cy = y - h/2, top = i === k - 1;
+  for (let i = 0; i < k; i++) { const w = (40 - i*3)*sc, h = (15.5 - i*.55)*sc, sx = cx + ((i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0))*sc, cy = y - h/2, top = i === k - 1;
     const special = !top && ({1: n >= 7 && '#D9B26A', 2: n >= 40 && '#93A9BF', 0: n >= 100 && '#EFE8DA', 3: n >= 365 && '#C8A3A0'})[i];
     if (top) { const gl = x.createRadialGradient(sx, cy, 0, sx, cy, 200); gl.addColorStop(0, 'rgba(255,204,120,.6)'); gl.addColorStop(1, 'rgba(255,204,120,0)'); x.fillStyle = gl; x.fillRect(sx-200, cy-200, 400, 400); }
     x.fillStyle = top ? '#F2B65A' : special || '#EDE6DA'; x.beginPath(); x.ellipse(sx, cy, w/2, h/2, 0, 0, 6.283); x.fill();
     x.fillStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.ellipse(sx - w*.12, cy - h*.18, w*.22, h*.14, 0, 0, 6.283); x.fill(); y -= h*.9; }
   if (k < 5) { x.setLineDash([10, 10]); x.lineWidth = 3; x.strokeStyle = 'rgba(255,248,238,.35)';
-    for (let i = k; i < 5; i++) { const w = (46 - i*3.4)*sc, h = (12.5 - i*.45)*sc, sx = cx + ((i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0))*sc; x.beginPath(); x.ellipse(sx, y - h/2, w/2, h/2, 0, 0, 6.283); x.stroke(); y -= h*.9; }
+    for (let i = k; i < 5; i++) { const w = (40 - i*3)*sc, h = (15.5 - i*.55)*sc, sx = cx + ((i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0))*sc; x.beginPath(); x.ellipse(sx, y - h/2, w/2, h/2, 0, 0, 6.283); x.stroke(); y -= h*.9; }
     x.setLineDash([]); }
   x.textAlign = 'center'; x.fillStyle = '#FFF8EE';
   x.font = '500 120px Newsreader, Georgia, serif'; x.fillText(n === 1 ? 'Day one' : `${n} days`, W/2, 250);
@@ -935,7 +938,7 @@ function lampCard(){
   return `<section class="card lampcard">${lampSVG(L.bright, 'main', L.total)}
     <div><p class="big">${L.total} <span>${L.total === 1 ? 'day' : 'days'} on the path</span></p><p class="small">${msg}</p>
     <span class="next-stone"><b></b>Next marker: ${next} days</span>
-    ${L.total >= 1 ? '<button class="link" data-act="sharePath" style="margin-top:6px">Share your path ›</button>' : ''}</div></section>`;
+    ${L.total >= 1 ? '<button class="link" data-act="sharePath" style="margin-top:8px;display:block">Share your path ›</button>' : ''}</div></section>`;
 }
 function sheetLantern(){
   const F = lantern();
