@@ -1192,7 +1192,7 @@ function pageCard(){
     <div class="psec"><span class="pl">Evening</span><div class="pbody">
       ${ev ? `${m ? `<span class="mood"><b style="background:${m.c}"></b>${m.l}</span>` : ''}${ev.a.map((x,i) => x ? `<div class="pnote"><span>${esc(evQ[i])}</span>${esc(x)}</div>` : '').join('')}`
         : rel ? `<p class="pline" style="font-size:16px;color:var(--muted)"><em>You wrote, and let it go.</em></p>`
-        : `<button class="pempty" data-act="windDown">Close your day with three short questions</button>`}
+        : `<button class="pempty" data-act="windDown">Close your day with three short questions</button><button class="link" data-act="windDown">Begin ›</button>`}
     </div></div>
     <div class="pmini">
       <button class="${d.silence ? 'ok' : ''}" data-act="goSilence">${d.silence ? 'Quiet minutes' : 'A few quiet minutes ›'}</button>
