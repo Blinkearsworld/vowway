@@ -157,6 +157,12 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
 .tick svg{width:15px;height:15px}
 .intent-word{font-family:var(--display);font-size:28px;color:var(--lamp);font-style:italic}
 .greet .memory{font-family:var(--display);font-style:italic;font-size:17px;line-height:1.4;margin:6px 0 10px;opacity:.92}
+a.setdown{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(242,179,90,.10),rgba(242,179,90,0) 70%)}
+a.setdown b{font-weight:600;font-size:15px}
+a.setdown .small{font-size:13px;color:var(--muted)}
+a.setdown .sd-go{margin-left:auto;font-size:22px;color:var(--muted)}
+.sd-dot{flex:none;width:10px;height:14px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 50% 70%,#fff6dc,#F2B35A 55%,rgba(242,120,40,.2));box-shadow:0 0 14px rgba(242,179,90,.7);animation:sdf 2.4s ease-in-out infinite}
+@keyframes sdf{50%{transform:scale(.88) translateY(1px);opacity:.85}}
 details.more-today summary{cursor:pointer;list-style:none;text-align:center;font-size:14px;color:var(--muted);padding:10px;border:1px dashed var(--line);border-radius:16px}
 details.more-today summary::-webkit-details-marker{display:none}
 details.more-today[open] summary{border-style:solid}
@@ -811,7 +817,7 @@ function sceneSVG(kind, ph, id='s'){
 let sceneKey = '';
 function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const k = (S.scene || 'lake') + curPhase(); if (k === sceneKey) return; sceneKey = k; document.getElementById('scene').innerHTML = sceneSVG(S.scene || 'lake', curPhase()); }
 function activeDays(){
-  const A = new Set([...Object.keys(S.intentions), ...S.released, ...S.deeds, ...Object.values(S.journey.done)]);
+  const A = new Set([...Object.keys(S.intentions), ...S.released, ...(S.setdown || []), ...S.deeds, ...Object.values(S.journey.done)]);
   S.reflections.forEach(r => A.add(r.date)); S.silence.forEach(s => A.add(s.date));
   S.lamps.forEach(l => A.add(l.date)); S.practices.forEach(p => p.checks.forEach(c => A.add(c))); Object.keys(S.lived || {}).forEach(k => A.add(k));
   return A;
@@ -1141,6 +1147,7 @@ function todayYou(){
   if (S.reflections.some(r => r.date === t && r.grat)) out.push('You noticed something good.');
   const m = S.reflections.filter(r => r.date === t && r.mood).slice(-1)[0]; if (m) { const ml = (MOODS.find(x => x.id === m.mood) || {}).l; if (ml) out.push(`You named how you felt: ${ml.toLowerCase()}.`); }
   if (S.released.includes(t)) out.push('You let something go.');
+  if ((S.setdown || []).includes(t)) out.push('You set something down at the flame.');
   return out;
 }
 function todayYouCard(){
@@ -1207,6 +1214,7 @@ function viewToday(){
       ${mem ? `<p class="memory">${esc(mem)}</p>` : ''}
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
     ${main.slice(0, 2).join('')}
+    <a class="setdown" href="setdown.html"><span class="sd-dot"></span><span><b>Something weighing on you?</b><br><span class="small">Write it, then let the flame take it. Nothing is kept.</span></span><span class="sd-go">›</span></a>
     ${main.length > 2 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(2), ...more].join('')}</div></details>` : ''}
   </div>`;
 }
@@ -1803,6 +1811,7 @@ window.addEventListener('scroll', fadeOrb, {passive:true});
 function render(){
   document.documentElement.dataset.phase = curPhase(); drawScene();
   if (lockedBlob) { app.className = 'app ob-mode'; app.innerHTML = viewLock(); layer.innerHTML = ''; setTimeout(() => { const i = document.getElementById('pin'); i && i.focus(); }, 30); return; }
+  try { const sd = JSON.parse(localStorage.getItem('vowway_setdown') || '[]'); if (sd.length && S.profile) { S.setdown = S.setdown || []; sd.forEach(k => { if (!S.setdown.includes(k)) S.setdown.push(k); }); localStorage.removeItem('vowway_setdown'); save(); } } catch(e){}
   if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 2) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
   app.className = 'app';
   app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
