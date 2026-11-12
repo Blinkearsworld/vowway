@@ -2098,7 +2098,12 @@ document.addEventListener('click', e => {
     case 'goSilence1': setSil('silence', 1); sil.voice = true; go('silence'); break;
     case 'goSleep': setSil('sleep', 20, 'ocean'); sil.voice = true; go('silence'); break;
     case 'goSleepRain': setSil('sleep', 20, 'rain'); sil.voice = true; go('silence'); break;
-    case 'windDown': openFlow(false); break;
+    case 'windDown': {
+      // the evening questions are always there when asked for, whatever stage of the path
+      if (!today().refl) { flow = {kind:'evening', steps:[...((S.lived || {})[TODAY()] ? [] : ['lived']), ...(vowToAsk() ? ['vowcheck'] : []), 'mood','q0','q1','q2','keep','stone'],
+        cta:'Close your day', sub:'Three short questions, then rest.', i:0, data:{mood:null, a:['','','']}}; renderFlow(); }
+      else openFlow(false);
+      break; }
     case 'toggleMode': { const order = ['auto','dawn','day','dusk','night']; S.modePref = order[(order.indexOf(S.modePref) + 1) % order.length]; save(); render(); toast(S.modePref === 'auto' ? 'Live: following your sun' : 'Light: ' + S.modePref); break; }
     case 'openWord': sheet = 'word'; renderSheet(); break;
     case 'chip': { const i = document.getElementById('intent'); if (i) i.value = b.dataset.w;
