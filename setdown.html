@@ -267,7 +267,7 @@ function reset(){
   layout(); place();
 }
 $('more').onclick = reset;
-const home = () => { location.href = './'; };
+const home = () => { location.href = './?from=setdown'; };
 $('again').onclick = home;
 $('close').onclick = () => { if (mode === 'table' && text.value.trim()) reset(); else home(); };
 
