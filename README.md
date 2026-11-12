@@ -1,6 +1,6 @@
 # vowway
 
-A journal that guides you. Feel calmer. Know yourself. Become better.
+A quiet place to return to. Feel calmer. Know yourself. Become better.
 
 A quiet daily companion for people of any belief, or none: a guided journal, silence and sleep sessions, small vows, and a library of wisdom from many cultures. Entries stay on the device and can be encrypted with a passcode.
 

@@ -1,7 +1,7 @@
 {
  "name": "vowway",
  "short_name": "vowway",
- "description": "A journal that guides you. Feel calmer. Know yourself. Become better.",
+ "description": "A quiet place to return to. Feel calmer. Know yourself. Become better.",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
