@@ -156,6 +156,10 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
 .tick{width:28px;height:28px;border-radius:50%;background:var(--sage);color:var(--solid);display:grid;place-items:center;flex:none}
 .tick svg{width:15px;height:15px}
 .intent-word{font-family:var(--display);font-size:28px;color:var(--lamp);font-style:italic}
+.greet .memory{font-family:var(--display);font-style:italic;font-size:17px;line-height:1.4;margin:6px 0 10px;opacity:.92}
+details.more-today summary{cursor:pointer;list-style:none;text-align:center;font-size:14px;color:var(--muted);padding:10px;border:1px dashed var(--line);border-radius:16px}
+details.more-today summary::-webkit-details-marker{display:none}
+details.more-today[open] summary{border-style:solid}
 details.roots{font-size:12.5px;color:var(--muted)}
 details.roots summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px}
 details.roots summary::-webkit-details-marker{display:none}
@@ -354,7 +358,10 @@ body.flowing .app{visibility:hidden}
 .fl-breath .ring::after{content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35)}
 .fl-breath .lbl{position:relative;font-family:var(--display);font-style:italic;font-size:23px}
 .fl .stonebox{display:grid;place-items:center;padding:6px 0}
-.fl .stonebox .lampsvg{width:150px;height:150px;animation:drop 1s cubic-bezier(.2,.8,.2,1)}
+.fl .stonebox .lampsvg{width:150px;height:150px;overflow:visible}
+.fl .stonebox .topstone{animation:stonedrop .75s cubic-bezier(.35,1.45,.55,1) .35s both}
+@keyframes stonedrop{from{transform:translateY(-60px);opacity:0}60%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.fl .stonebox .topstone{animation:none}}
 @keyframes drop{from{transform:translateY(-18px);opacity:.2}}
 .fl textarea{min-height:130px;font-size:16px}
 .fl .q-carry{font-family:var(--display);font-style:italic;font-size:26px;line-height:1.35;margin:0}
@@ -835,10 +842,12 @@ function lampSVG(bright, id='g', n=0){
   for (let i=0;i<Math.max(k,1);i++){
     const w = 46 - i * 3.4, h = 12.5 - i * .45, x = 60 + (i % 2 ? 2.5 : -2) + (i % 3 === 2 ? -1.5 : 0), cy = y - h/2;
     const top = i === k - 1;
-    out += k === 0
+    const special = !top && ({1: n >= 7 && '#D9B26A', 2: n >= 40 && '#93A9BF', 0: n >= 100 && '#EFE8DA', 3: n >= 365 && '#C8A3A0'})[i];
+    const stone = k === 0
       ? `<ellipse cx="60" cy="${cy}" rx="${w/2}" ry="${h/2}" style="fill:none;stroke:var(--ink);stroke-dasharray:3 3;opacity:.55"/>`
-      : `<ellipse cx="${x}" cy="${cy}" rx="${w/2}" ry="${h/2}" style="fill:${top ? 'var(--lamp-glow)' : 'var(--ink)'};opacity:${top ? (.55 + .45*bright).toFixed(2) : (.82 - i*.03).toFixed(2)}"/>`
+      : `<ellipse cx="${x}" cy="${cy}" rx="${w/2}" ry="${h/2}" style="fill:${top ? 'var(--lamp-glow)' : special || 'var(--ink)'};opacity:${top ? (.55 + .45*bright).toFixed(2) : special ? .95 : (.82 - i*.03).toFixed(2)}"/>`
         + `<ellipse cx="${x - w*.12}" cy="${cy - h*.18}" rx="${w*.22}" ry="${h*.14}" style="fill:#fff;opacity:.18"/>`;
+    out += top && k && id === 'fl' ? `<g class="topstone">${stone}</g>` : stone;
     if (top && k) out = `<circle cx="${x}" cy="${cy}" r="${26}" fill="url(#glow-${id})" style="opacity:${bright.toFixed(2)}"/>` + out;
     y -= h * .9;
   }
@@ -1025,6 +1034,19 @@ function ritualCard(){
       : `<div class="foot"><span class="small">This evening, I’ll ask how it went.</span><button class="link" data-act="nextQuote">Another</button></div>`}</section>`;
 }
 const vowToAsk = () => { const t = TODAY(); return S.practices.find(p => !pDone(p) && pStarted(p) && !p.checks.includes(t) && !(p.slips || []).includes(t)); };
+function memoryLine(){
+  const y = add(TODAY(), -1), r = S.reflections.filter(x => x.date === y).slice(-1)[0], L = (S.lived || {})[y];
+  const ids = r ? themesOf(r) : [];
+  if (r && r.mood === 'heavy') return 'Yesterday felt heavy. Go gently today.';
+  if (ids.includes('tired')) return 'Yesterday you wrote you were tired. How are you today?';
+  if (ids.includes('worry') || (r && r.mood === 'anxious')) return 'Yesterday was uneasy. One slow breath before anything else today.';
+  if (ids.includes('alone')) return 'Yesterday you felt alone. You’re not, here.';
+  if (L && L.a === 'yes') return `Yesterday you tried: “${L.tr.split(/(?<=[.?])\s/)[0]}” That counted.`;
+  if (S.lamps.some(l => l.date === y)) return 'Yesterday you sent a little light to someone.';
+  if (ids.includes('thanks') || (r && r.mood === 'grateful')) return 'Yesterday you found something to be grateful for.';
+  if (S.intentions[y]) return `Yesterday you chose to be ${S.intentions[y].toLowerCase()}.`;
+  return '';
+}
 function todayYou(){
   const t = TODAY(), out = [], L = (S.lived || {})[t];
   if (S.intentions[t]) out.push(`You chose to be <em>${esc(S.intentions[t].toLowerCase())}</em>.`);
@@ -1086,22 +1108,22 @@ function pageCard(){
       ${d.vow ? `<button class="${d.vow.checks.includes(t) ? 'ok' : ''}" data-act="check" data-id="${d.vow.id}">${esc(d.vow.checks.includes(t) ? d.vow.t : d.vow.t + ' · mark today')}</button>` : ''}
     </div></section>`;
 }
+let moreOpen = false;
+document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('more-today')) moreOpen = e.target.open; }, true);
 function viewToday(){
   const t = TODAY(), j = journey(), L = lampState(), h = HOUR();
   const name = S.profile && S.profile.name ? `, ${esc(S.profile.name)}` : '';
   const hello = L.gap >= 3 ? 'Welcome back' : h < 5 ? 'Still awake' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
-  const first = j.phase === 'first';
+  const first = j.phase === 'first', mem = h >= 4 && h < 17 && L.gap < 3 ? memoryLine() : '';
+  const ritual = !first || (S.journey.done[1] && S.journey.done[1] < t) ? ritualCard() : '';
+  const main = [first ? stepCard(j) : '', todayYouCard(), first ? '' : nowCard(), ritual].filter(Boolean);
+  const more = [!first || S.journey.done[1] ? pageCard() : '', first ? '' : forYouCard(), srcCard(), yearAgoCard()].filter(Boolean);
   return `<div class="stack">
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
+      ${mem ? `<p class="memory">${esc(mem)}</p>` : ''}
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
-    ${first ? stepCard(j) : ''}
-    ${todayYouCard()}
-    ${!first || (S.journey.done[1] && S.journey.done[1] < t) ? ritualCard() : ''}
-    ${first ? '' : nowCard()}
-    ${!first || S.journey.done[1] ? pageCard() : ''}
-    ${first ? '' : forYouCard()}
-    ${srcCard()}
-    ${yearAgoCard()}
+    ${main.slice(0, 2).join('')}
+    ${main.length > 2 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(2), ...more].join('')}</div></details>` : ''}
   </div>`;
 }
 
@@ -1562,6 +1584,16 @@ function welcomeVoice(){
     .forEach(([ms, line]) => welcomeT.push(setTimeout(() => { if (flow && flow.welcome && flow.i === -1) speak(line); }, ms)));
   welcomeT.push(setTimeout(() => { const g = document.querySelector('.welcome-go'); if (g) g.classList.add('shown'); }, 22000));
 }
+function stoneClack(){
+  try { const c = actx(), t0 = c.currentTime + .02, g = c.createGain(); g.gain.value = .32; g.connect(c.destination);
+    const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(150, t0); o.frequency.exponentialRampToValueAtTime(70, t0 + .14);
+    og.gain.setValueAtTime(.9, t0); og.gain.exponentialRampToValueAtTime(.001, t0 + .18); o.connect(og); og.connect(g); o.start(t0); o.stop(t0 + .2);
+    const len = Math.floor(c.sampleRate * .05), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const nz = c.createBufferSource(), bp = c.createBiquadFilter(), ng = c.createGain(); nz.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 1.2; ng.gain.value = .5;
+    nz.connect(bp); bp.connect(ng); ng.connect(g); nz.start(t0);
+  } catch(e){}
+}
 function welcomeStop(){ welcomeT.forEach(clearTimeout); welcomeT = []; breathT.forEach(clearTimeout); breathT = []; voStop(); }
 function closeFlow(){ welcomeStop(); flow = null; renderFlow(); render(); }
 function flowAct(act){
@@ -1661,11 +1693,15 @@ function renderFlow(){
       else if (jj.phase === 'first') { title = 'A stone on your path'; text = `Step ${jj.n - 1} of 7. That’s all for today. Tomorrow your path gets stone number ${lampState().total + 1}. ${TEASE[jj.n] || ''}`; }
       else if (jj.finishedOn === TODAY()) { title = 'Your first steps are complete'; text = 'Tomorrow the path begins. Each week, a new theme for your evenings; your cairn keeps growing.'; }
       else { title = 'A stone on your path'; text = 'That’s all for now. This evening, three short questions close your day.'; }
+      { const MS = {7:['A golden stone','Seven days. This one stays in your cairn, golden, so you remember where it began.'], 40:['A mountain stone','Forty days. An old number for a real change. This stone stays, the colour of the mountains.'],
+          100:['A white stone','A hundred days. Look how far you’ve walked. This stone stays white, like a fresh start you kept.'], 365:['A stone for a year','A whole year on the path. Thank you for walking it.']}[lampState().total];
+        if (MS && flow.kind !== 'evening') { title = MS[0]; text = MS[1]; } }
       body = `<div class="grow"></div><div class="stonebox">${lampSVG(1, 'fl', L.total)}</div><h1 style="text-align:center">${title}</h1><p class="lede" style="text-align:center">${esc(text)}</p>${flow.kind === 'evening' && todayYou().length >= 2 ? `<section class="card youcard" style="text-align:left"><p class="eyebrow go">Today, you</p><ul>${todayYou().map(x => `<li>${x}</li>`).join('')}</ul></section>` : ''}${flow.kind === 'evening' ? noteHTML((S.reflections.filter(r => r.date === TODAY()).slice(-1)[0] || {}).note) : ''}<p class="small" style="text-align:center">${L.total} ${L.total === 1 ? 'day' : 'days'} on the path</p><div class="grow"></div>`;
       foot = flow.kind === 'evening' ? `<button class="btn glow wide" data-act="flowSleep">Wind down for sleep</button><button class="fl-skip" data-act="flowClose">Not now</button>` : `<button class="btn glow wide" data-act="flowClose">Done</button>`;
       break; }
   }
   el.innerHTML = `<div class="fl" role="dialog" aria-modal="true"><div class="fl-in">${step === 'burn' ? '' : top}${body}<div class="fl-foot">${foot}</div></div></div>`;
+  if (step === 'stone') setTimeout(() => { if (flow && flow.steps[flow.i] === 'stone') stoneClack(); }, 820);
   if (step === 'breath1') { const t0 = Date.now(); clearInterval(flowIv); breathT.forEach(clearTimeout); breathT = [];
     [[500,'Good morning. Before the day begins, let’s take one quiet moment.'],[9000,'Breathe in slowly, all the way down.'],[16000,'And let it go.'],[30000,'Nothing to fix. Nothing to achieve. Just this breath.']]
       .forEach(([ms, line]) => breathT.push(setTimeout(() => { if (flow && flow.steps[flow.i] === 'breath1') speak(line); }, ms)));
