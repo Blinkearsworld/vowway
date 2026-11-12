@@ -505,6 +505,44 @@ const TRY = {
   anger:['When anger comes today, take one slow breath before you answer.','Tonight, let go of one thing that annoyed you today. Write it, then release it.'],
   courage:['Do one small thing today that feels a little uncomfortable.','Ask for something today that you usually would not ask for.'],
   grateful:['Notice one good thing today, and say thank you for it, out loud or inside.','Tell someone today one thing you appreciate about them.']};
+/* thoughts gathered for each direction a person can choose; public-domain sources and well-known sayings */
+const NEEDQ = {
+  calm:[['Very little is needed to make a happy life.','Marcus Aurelius, Meditations 7.67','quiet'],
+    ['We suffer more often in imagination than in reality.','Seneca, Letters 13','control'],
+    ['If you are troubled by anything outside you, the pain is not the thing itself, but your judgment of it.','Marcus Aurelius, Meditations 8.47','control'],
+    ['Nature does not hurry, yet everything is accomplished.','Attributed to Lao Tzu','patience'],
+    ['Be like the headland, on which the waves keep breaking. It stands firm, and the water around it falls still.','Marcus Aurelius, Meditations 4.49','peace'],
+    ['Do not spoil what you have by desiring what you have not.','Epicurus','grateful'],
+    ['Begin at once to live.','Seneca, Letters 101','present'],
+    ['Water is fluid, soft and yielding. Yet it wears away the rock, which cannot yield.','After Lao Tzu, Tao Te Ching 78','patience']],
+  self:[['Know thyself.','Inscription at Delphi','self'],
+    ['The unexamined life is not worth living.','Socrates, in Plato’s Apology','self'],
+    ['He who knows others is wise; he who knows himself is enlightened.','Lao Tzu, Tao Te Ching 33','self'],
+    ['No one steps in the same river twice.','Heraclitus','present'],
+    ['Trust thyself: every heart vibrates to that iron string.','Ralph Waldo Emerson, Self-Reliance','courage'],
+    ['Look within. Within is the fountain of good, and it will ever bubble up, if you will ever dig.','Marcus Aurelius, Meditations 7.59','self'],
+    ['The greatest thing in the world is to know how to belong to oneself.','Michel de Montaigne, Essays','self'],
+    ['It is not because things are difficult that we do not dare; it is because we do not dare that they are difficult.','Seneca, Letters 104','courage']],
+  habits:[['We are what we repeatedly do.','Will Durant, on Aristotle','work'],
+    ['First say to yourself what you would be; and then do what you have to do.','Epictetus, Discourses 3.23','work'],
+    ['A journey of a thousand miles begins with a single step.','Lao Tzu, Tao Te Ching 64','work'],
+    ['Waste no more time arguing what a good person should be. Be one.','Marcus Aurelius, Meditations 10.16','work'],
+    ['It is not that we have a short time to live, but that we waste much of it.','Seneca, On the Shortness of Life','time'],
+    ['No great thing is created suddenly.','Epictetus, Discourses 1.15','patience'],
+    ['Well begun is half done.','Aristotle, Politics','time'],
+    ['Little by little, one goes far.','Proverb','patience']],
+  meaning:[['He who has a why to live can bear almost any how.','Friedrich Nietzsche','hope'],
+    ['Wherever there is a human being, there is an opportunity for a kindness.','Seneca','kind'],
+    ['I slept and dreamt that life was joy. I awoke and saw that life was service. I acted, and behold, service was joy.','Rabindranath Tagore','give'],
+    ['Faith is the bird that feels the light and sings when the dawn is still dark.','Rabindranath Tagore','hope'],
+    ['The best way to find yourself is to lose yourself in the service of others.','Attributed to Mahatma Gandhi','give'],
+    ['What we do for ourselves dies with us. What we do for others remains.','Attributed to Albert Pike','give'],
+    ['The purpose of life is not to be happy, but to be useful, honourable, compassionate.','Attributed to Ralph Waldo Emerson','kind'],
+    ['Let us be grateful to the people who make us happy; they are the charming gardeners who make our souls blossom.','Attributed to Marcel Proust','grateful']]
+};
+Object.values(NEEDQ).forEach(l => l.forEach(([t,, th]) => QTH.set(t, th)));
+const NEED_TH = {calm:['quiet','peace','present','patience','control','hope'], self:['self','courage','present','grateful','time'],
+  habits:['work','time','patience','courage','control'], meaning:['kind','give','hope','grateful','self']};
 const tryFor = q => { const l = TRY[QTH.get(q.text) || 'self']; return l[Math.floor(fromKey(TODAY()) / 864e5) % l.length]; };
 const ALLQ = (() => { const lists = Object.values(Q).map(l => [...l]); const out = []; let i = 0;
   while (lists.some(l => l.length)) { const l = lists[i % lists.length]; if (l.length) out.push(l.shift()); i++; } return out; })();
@@ -807,7 +845,9 @@ function stepHook(type, quiet){
   }
   return false;
 }
-function quote(){ const pool = S.src === 'all' ? ALLQ : Q[S.src]; const day = Math.floor(fromKey(TODAY()) / 864e5); const [text, src] = pool[(day + S.qoff) % pool.length]; return {text, src}; }
+function quote(){ const n = need(), fit = q => NEED_TH[n].includes(QTH.get(q[0]));
+  let pool = S.src === 'all' ? [...NEEDQ[n], ...ALLQ.filter(fit)] : Q[S.src].filter(fit);
+  if (pool.length < 5) pool = S.src === 'all' ? ALLQ : Q[S.src]; const day = Math.floor(fromKey(TODAY()) / 864e5); const [text, src] = pool[(day + S.qoff) % pool.length]; return {text, src}; }
 const pDone = p => p.d != null && diff(TODAY(), p.start) >= p.d;
 const pStarted = p => p.start <= TODAY();
 const pDay = p => diff(TODAY(), p.start) + 1;
@@ -825,7 +865,13 @@ function milestoneToday(p){
   return null;
 }
 const vowWeekCount = p => { const ws = weekKey(); return p.checks.filter(c => c >= ws).length; };
-const reflQuestions = () => { const s = station(); return s && !s.justFinished ? [BASEQ[0], s.round > 1 ? s.st.deep : s.st.q, BASEQ[2]] : BASEQ; };
+const NEEDEQ = {
+  calm:['When did you feel calm today, even for a moment?','What worried you today that turned out smaller than it seemed?','What helped you breathe a little easier today?','What can you set down before you sleep?'],
+  self:['What did you notice about yourself today?','When did you feel most like yourself today?','What did a hard moment show you about you?','What did you want today that you didn’t say?'],
+  habits:['What small thing did you keep today?','Where did you choose the harder, better thing today?','What got in the way today, and what would make tomorrow easier?','What is one thing you’ll do tomorrow, no matter what?'],
+  meaning:['What did you do today that mattered to someone?','When did today feel worth it?','Who did you make a little better today?','What did you see today that you want to remember?']};
+const firstQ = () => { const l = NEEDEQ[need()]; return l[Math.floor(fromKey(TODAY()) / 864e5) % l.length]; };
+const reflQuestions = () => { const s = station(); return s && !s.justFinished ? [firstQ(), s.round > 1 ? s.st.deep : s.st.q, BASEQ[2]] : [firstQ(), BASEQ[1], BASEQ[2]]; };
 const roots = (txt, label='Where does this come from?') => `<details class="roots"><summary>${label}</summary><p>${esc(txt)}</p></details>`;
 const demoCount = (base, spread) => base + ((HOUR()*37 + new Date().getMinutes()*7) % spread);
 const today = () => { const t = TODAY();
@@ -1490,7 +1536,7 @@ function readAloud(text){
 
 /* onboarding: five calm screens, one question each */
 function viewOnboarding(){
-  const prog = `<div class="stepno">${[0,1,2,3,4].map(i => `<span class="${i <= ob.i ? 'on' : ''}"></span>`).join('')}</div>`;
+  const prog = `<div class="stepno">${[0,1,2].map(i => `<span class="${i <= ob.i ? 'on' : ''}"></span>`).join('')}</div>`;
   const back = ob.i > 0 ? '<button class="ob-back" data-act="obBack">Back</button>' : '';
   let body = '', foot = '';
   if (ob.i === 0) {
@@ -1499,17 +1545,9 @@ function viewOnboarding(){
       <p class="lede">A few lines a day, with gentle questions to guide you. Each day adds a stone to your path. Private, and it stays on your device.</p>`;
     foot = `<button class="btn glow wide" data-act="obNext">Begin</button>`;
   } else if (ob.i === 1) {
-    body = `<h1>What would help you most right now?</h1><p class="lede">Choose one. Everything stays open to you; this is just where we start.</p>
+    body = `<h1>What would help you most right now?</h1><p class="lede">Choose one. Your daily thoughts, small steps and evening questions will lean this way. Everything else stays open, and you can change it any time.</p>
       <div class="opts">${NEEDS.map(n => `<button class="opt" data-act="obNeed" data-k="${n.id}" aria-pressed="${ob.need === n.id}"><span><b style="font-weight:500;display:block">${n.l}</b><span class="small">${n.d}</span></span></button>`).join('')}</div>`;
     foot = `<button class="btn glow wide" data-act="obNext" ${ob.need ? '' : 'disabled'}>Continue</button>`;
-  } else if (ob.i === 2) {
-    body = `<h1>What brings you here?</h1><p class="lede">Choose any that feel true. It shapes where your path begins.</p>
-      <div class="opts">${REASONS.map(r => `<button class="opt" data-act="obReason" data-k="${r.id}" aria-pressed="${ob.reasons.includes(r.id)}">${r.l}</button>`).join('')}</div>`;
-    foot = `<button class="btn glow wide" data-act="obNext" ${ob.reasons.length ? '' : 'disabled'}>Continue</button>`;
-  } else if (ob.i === 3) {
-    body = `<h1>When do you have a quiet moment?</h1><p class="lede">We’ll gently remind you then. You can change it any time.</p>
-      <div class="opts">${[['morning','In the morning'],['day','During the day'],['evening','In the evening'],['night','Late at night']].map(([k,l]) => `<button class="opt" data-act="obTime" data-k="${k}" aria-pressed="${ob.time === k}">${l}</button>`).join('')}</div>`;
-    foot = `<button class="btn glow wide" data-act="obNext" ${ob.time ? '' : 'disabled'}>Continue</button>`;
   } else {
     body = `<h1>What should we call you?</h1><p class="lede">Optional. It stays on this device.</p>
       <input type="text" id="obname" maxlength="30" placeholder="Your first name" value="${esc(ob.name)}">`;
@@ -1570,7 +1608,7 @@ function sheetSettings(){
       <h2 id="st-t">Settings</h2>
       <div><p class="opt-label">Your name</p><div class="row"><input type="text" id="setname" maxlength="30" placeholder="Your first name" value="${esc((S.profile && S.profile.name) || '')}"><button class="btn ghost" data-act="saveName">Save</button></div></div>
       <div><p class="opt-label">Your place</p><div class="pals">${SCENES.map(([k,l]) => `<button data-act="setScene" data-k="${k}" aria-pressed="${S.scene===k}"><i>${sceneSVG(k, curPhase(), 'p' + k)}</i>${l}</button>`).join('')}</div></div>
-      <div><p class="opt-label">What you need most. Your home screen leads with it.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Your direction. Daily thoughts, small steps and your home screen lean this way.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
       <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">What gives you strength? Optional. Your daily word, and words on hard days, will come from it.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
@@ -1765,7 +1803,7 @@ window.addEventListener('scroll', fadeOrb, {passive:true});
 function render(){
   document.documentElement.dataset.phase = curPhase(); drawScene();
   if (lockedBlob) { app.className = 'app ob-mode'; app.innerHTML = viewLock(); layer.innerHTML = ''; setTimeout(() => { const i = document.getElementById('pin'); i && i.focus(); }, 30); return; }
-  if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 4) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
+  if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 2) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
   app.className = 'app';
   app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
   renderSheet(); fadeOrb();
@@ -1967,8 +2005,8 @@ document.addEventListener('click', e => {
     case 'obNeed': ob.need = b.dataset.k; render(); break;
     case 'obTime': ob.time = b.dataset.k; render(); break;
     case 'obFinish': { ob.name = (document.getElementById('obname').value || '').trim();
-      const first = REASONS.find(r => r.id === ob.reasons[0]);
-      S.profile = {need:ob.need, reasons:[...ob.reasons], time:ob.time, name:ob.name, startStation:first ? first.st : 0};
+      const dir = {calm:['anxiety', 2], self:['guilt', 3], habits:['discipline', 0], meaning:['meaning', 11]}[ob.need] || ['curious', 0];
+      S.profile = {need:ob.need, reasons:[dir[0]], name:ob.name, startStation:dir[1]};
       save(); tab = 'today'; render(); window.scrollTo(0,0); openFlow(true); flow.welcome = true; renderFlow(); welcomeVoice(); break; }
     case 'redoOb': Object.assign(ob, {i:0, need:null, reasons:[], time:null, name:''}); S.profile = null; save(); sheet = null; render(); break;
 
