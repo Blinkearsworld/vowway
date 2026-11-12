@@ -932,7 +932,7 @@ function lampCard(){
   return `<section class="card lampcard">${lampSVG(L.bright, 'main', L.total)}
     <div><p class="big">${L.total} <span>${L.total === 1 ? 'day' : 'days'} on the path</span></p><p class="small">${msg}</p>
     <span class="next-stone"><b></b>Next marker: ${next} days</span>
-    ${L.total >= 3 ? '<button class="link" data-act="sharePath" style="margin-top:6px">Share your path ›</button>' : ''}</div></section>`;
+    ${L.total >= 1 ? '<button class="link" data-act="sharePath" style="margin-top:6px">Share your path ›</button>' : ''}</div></section>`;
 }
 function sheetLantern(){
   const F = lantern();
