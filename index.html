@@ -964,45 +964,6 @@ function lampSVG(bright, id='g', n=0){
     <defs><linearGradient id="shade-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient><radialGradient id="glow-${id}"><stop offset="0" style="stop-color:var(--lamp-glow);stop-opacity:.6"/><stop offset="1" style="stop-color:var(--lamp-glow);stop-opacity:0"/></radialGradient></defs>
     <g transform="translate(0 ${id === 'pill' ? Math.min(0, 64 - (y + 106) / 2).toFixed(1) : 0})"><g transform="${106 - y > 98 ? `translate(60 108) scale(${(98 / (106 - y)).toFixed(3)}) translate(-60 -108)` : ''}"><ellipse cx="60" cy="108" rx="34" ry="4" style="fill:#000;opacity:.25"/>${out}</g></g></svg>`;
 }
-/* the lantern: one firefly for each day you show up. You choose its size; the fireflies grow smaller
-   in a bigger lantern, so it always fills exactly. When it is full, they fly off and become stars in your night sky. */
-function lantern(){
-  if (!S.lantern) S.lantern = {start:S.journey.start || TODAY(), size:7};
-  const size = S.lantern.size, start = S.lantern.start;
-  const fill = Math.min(size, [...activeDays()].filter(k => k >= start).length);
-  return {size, fill, full:fill >= size, freed:S.freed || 0};
-}
-const ffOrder = {};
-function lanternSVG(fill, size, bright=1, id='g', mode=''){
-  const r = Math.max(1.2, Math.min(3.6, 3.6 * Math.sqrt(7 / size))), g = size ? fill / size : 0;
-  // every spot in the lantern, then a golden-ratio order so even a few fireflies spread out
-  const spots = Array.from({length:size}, (_,i) => { const rr = Math.sqrt((i + .9) / (size + .4)), th = i * 2.39996 + .6; return [60 + 24 * rr * Math.cos(th), 77 + 15 * rr * Math.sin(th)]; });
-  const order = ffOrder[size] || (ffOrder[size] = (() => { // each new firefly goes where there is most room
-    const o = [spots.reduce((bi, p, i) => Math.abs(p[0] - 52) + Math.abs(p[1] - 82) < Math.abs(spots[bi][0] - 52) + Math.abs(spots[bi][1] - 82) ? i : bi, 0)];
-    while (o.length < size) { let best = -1, bd = -1;
-      spots.forEach((p, i) => { if (o.includes(i)) return; const d = Math.min(...o.map(j => (p[0] - spots[j][0]) ** 2 + (p[1] - spots[j][1]) ** 2)); if (d > bd) { bd = d; best = i; } });
-      o.push(best); }
-    return o; })());
-  let ff = '';
-  for (let k = 0; k < fill; k++) {
-    const [x, y] = spots[order[k]].map(v => v.toFixed(1));
-    const cls = mode === 'new' && k === fill - 1 ? 'ff ffnew' : 'ff';
-    const st = mode === 'fly' ? `--dx:${((k % 5) - 2) * 14}px;animation-delay:${(k * .09).toFixed(2)}s` : `animation-delay:${((k * .37) % 3).toFixed(2)}s`;
-    const am = Math.max(1.6, Math.min(4.5, 4.5 * Math.sqrt(7 / size))), rnd = n => ((((Math.sin((k + 1) * n) * 9999) % 1 + 1) % 1) * 2 - 1) * am;
-    const wv = mode === 'fly' ? '' : `<g class="ffw" style="--x1:${rnd(12.9).toFixed(1)}px;--y1:${(rnd(78.2) * .7).toFixed(1)}px;--x2:${rnd(39.4).toFixed(1)}px;--y2:${(rnd(5.7) * .7).toFixed(1)}px;--x3:${rnd(91.1).toFixed(1)}px;--y3:${(rnd(23.3) * .7).toFixed(1)}px;animation-duration:${(7 + (k * 1.7) % 6).toFixed(1)}s;animation-delay:-${((k * 2.3) % 7).toFixed(1)}s">`;
-    ff += wv + `<g class="${cls}" style="${st}"><circle cx="${x}" cy="${y}" r="${(r * 3).toFixed(1)}" style="fill:#FFB23E;opacity:.42"/><circle cx="${x}" cy="${y}" r="${(r * 1.7).toFixed(1)}" style="fill:#FFCF6A;opacity:.75"/><circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" style="fill:#FFFBEA"/></g>` + (wv ? '</g>' : '');
-  }
-  const warm = (.15 + .7 * g * bright).toFixed(2);
-  return `<svg class="lampsvg ${mode === 'fly' ? 'flying' : ''}" viewBox="0 0 120 120" aria-hidden="true">
-    <defs><radialGradient id="lg-${id}"><stop offset="0" style="stop-color:#FFD98A;stop-opacity:.6"/><stop offset="1" style="stop-color:#FFD98A;stop-opacity:0"/></radialGradient>
-      <radialGradient id="lb-${id}" cx=".5" cy=".75" r=".7"><stop offset="0" style="stop-color:#FFE7A3;stop-opacity:1"/><stop offset="1" style="stop-color:#FFE7A3;stop-opacity:0"/></radialGradient></defs>
-    <ellipse cx="60" cy="112" rx="26" ry="3" style="fill:#000;opacity:.18"/>
-    <circle cx="60" cy="74" r="58" fill="url(#lg-${id})" style="opacity:${(.15 + .85 * g * bright).toFixed(2)}"/>
-    <image href="lantern.png?v=1" x="4" y="2" width="112" height="112"/>
-    <ellipse cx="60" cy="79" rx="29" ry="21" fill="url(#lb-${id})" style="opacity:${warm}"/>
-    ${ff}</svg>`;
-}
-const LSIZES = [[7,'A week'],[21,'Three weeks'],[30,'A month'],[40,'Forty days'],[100,'A hundred days']];
 async function sharePath(){
   const n = lampState().total, W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
   const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#34477A'); g.addColorStop(.55, '#8C7BA6'); g.addColorStop(1, '#E3B08C'); x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -1040,20 +1001,6 @@ function lampCard(){
     <div><p class="big">${L.total} <span>${L.total === 1 ? 'day' : 'days'} on the path</span></p><p class="small">${msg}</p>
     <span class="next-stone"><b></b>Next marker: ${next} days</span>
     ${L.total >= 1 ? '<button class="link" data-act="sharePath" style="margin-top:8px;display:block">Share your path ›</button>' : ''}</div></section>`;
-}
-function sheetLantern(){
-  const F = lantern();
-  return sheetWrap(`<div class="stack"><h2 id="ln-t">How big is your lantern?</h2>
-    <p class="small">One firefly for each day you show up. In a bigger lantern the fireflies are smaller, so it always fills exactly. When it is full, they fly off and become stars in your night sky.</p>
-    <div class="lsizes">${LSIZES.map(([k,l]) => `<button data-act="setLantern" data-k="${k}" aria-pressed="${F.size === k}" ${k < F.fill ? 'disabled' : ''}>${lanternSVG(k, k, 1, 'ls' + k)}<b>${k} days</b><span>${l}</span></button>`).join('')}</div>
-    <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'ln-t');
-}
-let flown = 0;
-function sheetFly(){
-  return sheetWrap(`<div class="stack" style="text-align:center"><h2 id="fy-t">They’re stars now</h2>
-    <div class="flybox">${lanternSVG(flown, flown, 1, 'fly', 'fly')}</div>
-    <p class="lede">${flown} fireflies flew into your night sky. Look up tonight. A new lantern begins tomorrow.</p>
-    <button class="btn primary wide" data-act="closeSheet">Thank you</button></div>`, 'fy-t');
 }
 function intentUI(){
   return `<div class="chips">${INTENTS.map(w => `<button class="chip" data-act="chip" data-w="${w}">${w}</button>`).join('')}</div>
@@ -1301,12 +1248,14 @@ function lampsForCard(){
     <div class="row"><input type="text" id="lampfor" maxlength="40" placeholder="A name, or just a thought"><button class="btn primary" data-act="lightLamp">Light</button></div>
   </section>`;
 }
+const quietSeg = () => sil.running ? '' : `<div class="seg two" role="group" aria-label="Quiet">${[['silence','Be still'],['library','Library']].map(([k,l]) => `<button data-act="tab" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join('')}</div>`;
 function viewSilence(){
   const sleep = sil.mode === 'sleep';
   const wk = S.silence.filter(s => diff(TODAY(), s.date) < 7).reduce((a,s) => a + s.min, 0);
   const durs = sleep ? [20] : [1,3,5,10];
   const sounds = sleep ? [['ocean','Sea'],['rain','Rain'],['wind','Wind']] : [['none','None'],['tone','Tone'],['rain','Rain'],['ocean','Sea'],['wind','Wind']];
   return `<div class="stack">
+    ${sil.custom ? '' : quietSeg()}
     ${sil.custom ? `<section class="greet"><p class="date">${esc(sil.custom.by)}</p><h1>${esc(sil.custom.t)}</h1><p class="lede">${sil.custom.type === 'listen' ? 'Press Begin, and let the voice guide you.' : 'Press Begin, and let the sound carry you.'}</p></section>` :
     `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go. A gentle voice and a soft sound will stay with you as you drift off.' : 'Stop for a moment. There’s nothing you need to do here.'}</p></section>`}
     <div class="seg two" role="group" aria-label="Mode">${[['silence','Silence'],['sleep','Sleep']].map(([k,l]) => `<button data-act="silMode" data-k="${k}" aria-pressed="${sil.mode===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div>
@@ -1320,10 +1269,6 @@ function viewSilence(){
     <p class="small" style="text-align:center">${wk ? `${plural(wk,'minute')} of silence this week. ` : ''}The guiding voice is AI-generated, made with an open model.</p>
     ${sleep ? '' : `
     <div class="section-h"><h2>Together</h2><span class="small">one earth, one sky</span></div>
-    <section class="card"><h2>Shared silence</h2>
-      <p class="station-q" style="font-size:18px;color:var(--muted)">Different skies, the same quiet.</p>
-      <div class="globe" id="globe" aria-hidden="true"><canvas id="globecv"></canvas></div>
-    </section>
     ${lampsForCard()}`}
   </div>`;
 }
@@ -1398,11 +1343,11 @@ let pathView = 'path';
 function viewPath(){
   const j = journey();
   const active = S.practices.filter(p => !pDone(p)), past = S.practices.filter(pDone);
-  const firstSteps = `<section class="card"><p class="eyebrow">First steps</p>
+  const firstSteps = `<details class="roots" ${j.phase === 'first' ? '' : ''}><summary>First steps · ${Object.keys(S.journey.done).length} of 7</summary><section class="card" style="margin-top:12px"><p class="eyebrow">First steps</p>
     <div>${STEPS.map((st,i) => { const n = i+1, d = S.journey.done[n];
       const cls = d ? 'done' : (j.phase === 'first' && j.n === n ? 'now' : 'later');
       return `<div class="stone ${cls}"><span class="mk">${d ? ICON.check : n}</span><div><h3>${esc(st.t)}</h3>${cls === 'now' ? `<p class="small">${esc(st.d)}</p>` : ''}</div></div>`; }).join('')}</div>
-    <p class="small">After these seven steps, each week brings a new theme for your evening questions.</p></section>`;
+    <p class="small">After these seven steps, each week brings a new theme for your evening questions.</p></section></details>`;
   return `<div class="stack">
     <section class="greet"><h1>Your path</h1><p class="lede">A stone for every day, and small promises you keep.</p></section>
     ${lampCard()}
@@ -1567,11 +1512,12 @@ function viewLibrary(){
   const list = LIBRARY.filter(i => (libType === 'all' || i.type === libType || (libType === 'listen' && i.type === 'sound')) && (libTheme === 'all' || i.th.includes(libTheme)));
   const group = (type, title) => { const g = list.filter(i => i.type === type); return g.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">${title}</p>${g.map(i => libRow(i)).join('')}</section>` : ''; };
   return `<div class="stack">
+    ${quietSeg()}
     <section class="greet"><h1>Library</h1><p class="lede">Words that have helped people for centuries, from many cultures. Every source checked, nothing misattributed.</p></section>
+    ${dirLib()}
     <section class="card featured"><div class="art" style="background:${artBg(f.th[0])}"></div><p class="eyebrow go">Today in the library</p><h3>${esc(f.t)}</h3>
       <q>${esc(f.text.split('\n')[0])}</q><span class="small">${esc(f.by)}</span>
       <button class="btn ghost" data-act="openItem" data-id="${f.id}">Read the whole passage</button></section>
-    ${dirLib()}
     <div class="seg" role="group" aria-label="Type">${[['all','All'],['read','Read'],['listen','Listen']].map(([k,l]) => `<button data-act="libType" data-k="${k}" aria-pressed="${libType===k}">${l}</button>`).join('')}</div>
     <div class="chips scroll" role="group" aria-label="Theme">${THEMES.map(([k,l]) => `<button class="chip" data-act="libTheme" data-k="${k}" aria-pressed="${libTheme===k}">${l}</button>`).join('')}</div>
     ${(() => {
@@ -1640,9 +1586,9 @@ function unlocked(id){
   return true;
 }
 function nav(){
-  const items = [['today','Today'],['journal','Journal'],['silence','Quiet'],['library','Library'],['path','Path']].filter(([id]) => unlocked(id));
+  const items = [['today','Today'],['journal','Journal'],['silence','Quiet'],['path','Path']].filter(([id]) => unlocked(id));
   const seen = S.seenTabs || [];
-  return `<nav class="nav" aria-label="Main" style="--tabs:${items.length}">${items.map(([id,l]) => `<button data-act="tab" data-tab="${id}" class="${['library','path'].includes(id) && !seen.includes(id) ? 'new' : ''}" ${tab===id ? 'aria-current="page"' : ''}>${ICON[id]}<span>${l}</span></button>`).join('')}</nav>`;
+  return `<nav class="nav" aria-label="Main" style="--tabs:${items.length}">${items.map(([id,l]) => `<button data-act="tab" data-tab="${id}" class="${id === 'path' && !seen.includes(id) ? 'new' : ''}" ${tab === id || (id === 'silence' && tab === 'library') ? 'aria-current="page"' : ''}>${ICON[id]}<span>${l}</span></button>`).join('')}</nav>`;
 }
 function header(){
   return `<header class="top"><div class="mark">vow<i>·</i>way</div>
@@ -1702,10 +1648,10 @@ function sheetSettings(){
         <p class="small" style="margin-top:8px"><b>Your privacy.</b> Everything you write stays on this phone. There are no accounts, no servers, no ads and no tracking. We collect nothing, so we have nothing to share or lose.</p>
         <p class="small" style="margin-top:8px"><b>Not medical care.</b> vowway is not medical, psychological or professional advice, and does not replace it. If you are in danger or thinking of harming yourself, contact local emergency services, call or text 988 in the US, or find a helpline in your country at <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--lamp)">findahelpline.com</a>.</p>
         <p class="small" style="margin-top:8px">Texts are from the public domain or written by vowway. Use the app at your own discretion.</p></div>
-      <div class="card quiet"><p class="eyebrow">Prototype tools</p><p class="small">For showing how the app grows over time. This replaces your own entries with an example.</p>
-        <button class="btn ghost" data-act="redoOb">Answer the welcome questions again</button>
-        <button class="btn ghost" data-act="demoPath" style="${pendingDelete==='demo' ? 'color:var(--rose);border-color:var(--rose)' : ''}">${pendingDelete==='demo' ? 'Tap again: your entries will be replaced' : 'Preview the path, 30 days in'}</button>
-        <button class="btn ghost" data-act="reset" style="${pendingDelete==='all' ? 'color:var(--rose);border-color:var(--rose)' : ''}">${pendingDelete==='all' ? 'Tap again to erase everything' : 'Start fresh (erase everything)'}</button></div>
+      ${/[?&]dev\b/.test(location.search) ? `<div class="card quiet"><p class="eyebrow">Prototype tools</p><p class="small">For showing how the app grows over time. This replaces your own entries with an example.</p>
+        <button class="btn ghost" data-act="demoPath" style="${pendingDelete==='demo' ? 'color:var(--rose);border-color:var(--rose)' : ''}">${pendingDelete==='demo' ? 'Tap again: your entries will be replaced' : 'Preview the path, 30 days in'}</button></div>` : ''}
+      <div class="row" style="flex-wrap:wrap;gap:6px 14px"><button class="link" data-act="redoOb">Answer the welcome questions again</button>
+        <button class="link" data-act="reset" style="color:${pendingDelete==='all' ? 'var(--rose)' : 'var(--muted)'}">${pendingDelete==='all' ? 'Tap again to erase everything' : 'Start fresh'}</button></div>
       <button class="btn primary wide" data-act="closeSheet">Done</button>
     </div>`, 'st-t');
 }
@@ -1899,7 +1845,7 @@ function render(){
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, lantern:sheetLantern, fly:sheetFly, note:sheetNote, reminder:sheetReminder, season:sheetSeason}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder, season:sheetSeason}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -2050,15 +1996,6 @@ function setSil(mode, mins, sound){ sil.custom = null; sil.mode = mode; sil.tota
     if (document.documentElement.dataset.phase === 'night') gold.forEach(s => { const a = .45 + .45*(still ? .6 : (Math.sin(ts/1300 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,214,140,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     const ph = document.documentElement.dataset.phase;
-    if (false) {
-      if (!flies.length) { let sd = 11; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647; flies = Array.from({length:24}, () => ({x:rn(), y:.62 + rn() * .34, a:rn() * 6.28, b:rn() * 6.28, s:.4 + rn() * .6})); }
-      const r = window.devicePixelRatio || 1, t = still ? 0 : ts / 1000;
-      flies.forEach(f => { const fx = (f.x + .025 * Math.sin(t * .23 * f.s + f.a)) * cv.width, fy = (f.y + .018 * Math.sin(t * .31 * f.s + f.b)) * cv.height;
-        const on = Math.max(0, Math.sin(t * .9 * f.s + f.a * 3)); if (on < .05) return;
-        const gr = x.createRadialGradient(fx, fy, 0, fx, fy, 9 * r); gr.addColorStop(0, `rgba(255,214,120,${(.55 * on).toFixed(2)})`); gr.addColorStop(1, 'rgba(255,214,120,0)');
-        x.fillStyle = gr; x.beginPath(); x.arc(fx, fy, 9 * r, 0, 6.283); x.fill();
-        x.fillStyle = `rgba(255,248,220,${(.9 * on).toFixed(2)})`; x.beginPath(); x.arc(fx, fy, 1.4 * r, 0, 6.283); x.fill(); });
-    }
     if (document.documentElement.dataset.phase === 'night') pts.forEach(s => { const a = .2 + .4*(still ? .6 : (Math.sin(ts/1700 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,248,232,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     if (!still) requestAnimationFrame(draw); }
@@ -2114,10 +2051,6 @@ document.addEventListener('click', e => {
       vf.title = ''; save(); sheet = null; pathView = 'vows'; tab = 'path'; render(); window.scrollTo(0,0); toast('Forty days begin'); break; }
     case 'backupLater': { const d = new Date(); d.setDate(d.getDate() + 14); S.backupSnooze = dk(d); save(); render(); break; }
     case 'restore': { const i2 = document.getElementById('restorefile'); if (i2) i2.click(); break; }
-    case 'lanternSize': sheet = 'lantern'; renderSheet(); break;
-    case 'setLantern': { const k = +b.dataset.k; lantern(); S.lantern.size = k; save(); sheet = null; render(); toast(`A lantern for ${k} days`); break; }
-    case 'flyLantern': { const F = lantern(); if (!F.full) break; flown = F.size; S.freed = (S.freed || 0) + F.size; S.lanternsDone = (S.lanternsDone || 0) + 1;
-      S.lantern = {start:add(TODAY(), 1), size:F.size}; save(); sheet = 'fly'; render(); break; }
     case 'sharePath': sharePath(); break;
     case 'pathView': pathView = b.dataset.k; render(); break;
     case 'newVow': sheet = 'newvow'; renderSheet(); break;
