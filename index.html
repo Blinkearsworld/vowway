@@ -1256,17 +1256,22 @@ function viewToday(){
   const hello = L.gap >= 3 ? 'Welcome back' : h < 5 ? 'Still awake' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
   const first = j.phase === 'first', mem = h >= 4 && h < 17 && L.gap < 3 ? memoryLine() : '';
   const ritual = !first || (S.journey.done[1] && S.journey.done[1] < t) ? ritualCard() : '';
-  const main = [first ? stepCard(j) : '', todayYouCard(), first ? '' : nowCard(), ritual].filter(Boolean);
+  // one thing at a time: the card that matters most right now leads, everything else waits below
+  const night = isNight(), closed = !!today().refl, yc = todayYouCard();
+  const evening = night && !closed && !(first && j.avail) ? `<section class="card"><p class="eyebrow">This evening</p><h3>Close your day</h3>
+    <p class="small" style="margin:6px 0 12px">Three short questions, then rest.</p><button class="btn primary wide" data-act="windDown">Begin</button></section>` : '';
+  const primary = first && j.avail ? stepCard(j) : night && closed && yc ? yc : evening || ritual || (first ? stepCard(j) : nowCard()) || yc;
+  const main = [primary, ...[first ? stepCard(j) : '', yc, first ? '' : nowCard(), ritual].filter(c => c && c !== primary)].filter(Boolean);
+  const notice = seasonCard() || backupNudge();
   const more = [!first || S.journey.done[1] ? pageCard() : '', first ? '' : forYouCard(), srcCard(), yearAgoCard()].filter(Boolean);
   return `<div class="stack">
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
       ${mem ? `<p class="memory">${esc(mem)}</p>` : ''}
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
-    ${main.slice(0, 2).join('')}
-    ${seasonCard()}
-    ${backupNudge()}
+    ${main[0] || ''}
+    ${notice}
     <a class="setdown" href="setdown.html"><span class="sd-dot"></span><span><b>Something weighing on you?</b><br><span class="small">Write it, then let the flame take it. Nothing is kept.</span></span><span class="sd-go">›</span></a>
-    ${main.length > 2 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(2), ...more].join('')}</div></details>` : ''}
+    ${main.length > 1 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(1), ...more].join('')}</div></details>` : ''}
   </div>`;
 }
 
