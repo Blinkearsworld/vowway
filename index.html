@@ -36,6 +36,14 @@ body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-w
 #scene svg{width:100%;height:100%;display:block}
 #scene::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,22,.28) 0%,rgba(6,10,22,.06) 28%,rgba(6,10,22,.42) 62%,rgba(6,10,22,.72) 100%)}
 #scene .orb{transition:opacity .25s linear}
+#scene .photo{position:absolute;inset:0;background-size:cover;background-position:50% 50%;animation:bgin 1.2s ease}
+@keyframes bgin{from{opacity:0}to{opacity:1}}
+#scene[data-ph=day]::after,#scene[data-ph=dawn]::after{background:linear-gradient(180deg,rgba(16,24,48,.46) 0%,rgba(16,24,48,.16) 32%,rgba(10,16,34,.40) 60%,rgba(6,10,22,.74) 100%)}
+#scene[data-ph=dusk]::after{background:linear-gradient(180deg,rgba(14,14,40,.40) 0%,rgba(14,14,40,.12) 30%,rgba(8,10,26,.42) 60%,rgba(6,8,22,.74) 100%)}
+#scene .moon{position:absolute;pointer-events:none}
+#scene .moon svg{width:100%;height:100%;overflow:visible}
+#scene .moonref{position:absolute;pointer-events:none;border-radius:50%;filter:blur(4px);background:radial-gradient(ellipse at 50% 35%,rgba(246,238,216,.55),rgba(246,238,216,0) 70%);animation:shimmer 6s ease-in-out infinite}
+@keyframes shimmer{50%{transform:scaleX(.8) scaleY(1.06);opacity:.75}}
 .lede,.greet h1{text-shadow:0 1px 14px rgba(6,10,22,.45)}
 /* keeps content from sliding under the clock and battery */
 .topfade{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);z-index:19;background:color-mix(in srgb,var(--solid) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);pointer-events:none}
@@ -830,7 +838,35 @@ function sceneSVG(kind, ph, id='s'){
   return `<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
 }
 let sceneKey = '';
-function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const k = (S.scene || 'lake') + curPhase(); if (k === sceneKey) return; sceneKey = k; document.getElementById('scene').innerHTML = sceneSVG(S.scene || 'lake', curPhase()); }
+/* the real moon: today's phase, drawn over the night lake */
+const BG = {w:972, h:1619, moon:{x:830, y:324, r:34}, ref:{x:849, y:1272}};
+function moonAge(d = new Date()){ const p = ((d - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588853) % 1; return p < 0 ? p + 1 : p; }
+const SOUTH = (() => { try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Apia|Noumea|Efate)|^America\/(Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas|Bahia|Recife|Fortaleza|Belem)|^Africa\/(Johannesburg|Maputo|Harare|Lusaka|Windhoek|Gaborone|Maseru|Mbabane|Lubumbashi|Blantyre|Luanda)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch(e){ return false; } })();
+function moonHTML(){
+  const p = moonAge(), k = Math.cos(2 * Math.PI * p), lit = (1 - k) / 2;
+  if (lit < .025) return '';                      // new moon: only the stars tonight
+  const r = 50, rx = r * Math.abs(k), flip = (p >= .5) !== SOUTH;
+  const path = `M0,${-r} A${r},${r} 0 0 1 0,${r} A${rx},${r} 0 0 ${k > 0 ? 0 : 1} 0,${-r} Z`;
+  return `<div class="orb moon" data-lit="${lit.toFixed(2)}"><svg viewBox="-150 -150 300 300" aria-hidden="true">
+    <defs><radialGradient id="mglow"><stop offset="0" stop-color="#F6EEDA" stop-opacity="${(.18 + .32 * lit).toFixed(2)}"/><stop offset="1" stop-color="#F6EEDA" stop-opacity="0"/></radialGradient>
+    <radialGradient id="mface" cx=".42" cy=".4"><stop offset="0" stop-color="#FFFBF0"/><stop offset="1" stop-color="#E9DFC6"/></radialGradient></defs>
+    <circle r="${(110 + 40 * lit).toFixed(0)}" fill="url(#mglow)"/>
+    <circle r="${r}" fill="rgba(200,210,240,.07)"/>
+    <path d="${path}" fill="url(#mface)" transform="${flip ? 'scale(-1,1)' : ''}"/></svg></div>
+    <div class="moonref" style="opacity:${(.25 + .6 * lit).toFixed(2)}"></div>`;
+}
+function placeMoon(){
+  const m = document.querySelector('#scene .moon'), f = document.querySelector('#scene .moonref'); if (!m) return;
+  const W = innerWidth, H = innerHeight, sc = Math.max(W / BG.w, H / BG.h), ox = (W - BG.w * sc) / 2, oy = (H - BG.h * sc) / 2;
+  const size = BG.moon.r * sc * 6, x = W * .8, y = H * .14;   // open sky to the right of the greeting, clear of the buttons
+  Object.assign(m.style, {width:size + 'px', height:size + 'px', left:(x - size / 2) + 'px', top:(y - size / 2) + 'px'});
+  if (f) { const w = BG.moon.r * sc * 1.3, h = BG.moon.r * sc * 3.4; Object.assign(f.style, {width:w + 'px', height:h + 'px', left:(x - w / 2) + 'px', top:(oy + BG.ref.y * sc - h / 2) + 'px'}); }
+}
+addEventListener('resize', placeMoon);
+function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = (S.scene || 'lake') === 'lake', k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
+  const el = document.getElementById('scene'); el.dataset.ph = ph; if (photo) el.dataset.photo = '1'; else delete el.dataset.photo;
+  el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
+  placeMoon(); }
 /* seasons many people keep; a person who chose one tradition sees only that tradition's season (and the new year) */
 function easter(y){ const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
   h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
@@ -2010,10 +2046,10 @@ function setSil(mode, mins, sound){ quietOpen = true; sil.custom = null; sil.mod
     const nf = Math.min((typeof S !== 'undefined' && S.freed) || 0, 160);
     if (gold.length !== nf) { const r = window.devicePixelRatio || 1; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       gold = Array.from({length:nf}, () => ({x:rnd(), y:rnd()*.6, r:(rnd()*.9 + .9) * r, p:rnd()*6.28})); }
-    if (document.documentElement.dataset.phase === 'night') gold.forEach(s => { const a = .45 + .45*(still ? .6 : (Math.sin(ts/1300 + s.p) + 1)/2);
+    if (document.documentElement.dataset.phase === 'night' && !document.getElementById('scene').dataset.photo) gold.forEach(s => { const a = .45 + .45*(still ? .6 : (Math.sin(ts/1300 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,214,140,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     const ph = document.documentElement.dataset.phase;
-    if (document.documentElement.dataset.phase === 'night') pts.forEach(s => { const a = .2 + .4*(still ? .6 : (Math.sin(ts/1700 + s.p) + 1)/2);
+    if (document.documentElement.dataset.phase === 'night' && !document.getElementById('scene').dataset.photo) pts.forEach(s => { const a = .2 + .4*(still ? .6 : (Math.sin(ts/1700 + s.p) + 1)/2);
       x.fillStyle = `rgba(255,248,232,${a.toFixed(2)})`; x.beginPath(); x.arc(s.x*cv.width, s.y*cv.height, s.r, 0, 6.283); x.fill(); });
     if (!still) requestAnimationFrame(draw); }
   size(); addEventListener('resize', size); requestAnimationFrame(draw); if (still) setInterval(() => draw(0), 1500);
