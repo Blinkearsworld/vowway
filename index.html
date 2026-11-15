@@ -336,6 +336,7 @@ details.roots p{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--lam
 .pmini button.ok{color:var(--muted)}
 .pmini button.ok::before{content:"✓";color:var(--sage)}
 /* journal */
+.card > .eyebrow + .jday{border-top:0;padding-top:10px}
 .jday{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
 .jday:first-child{border-top:0;padding-top:4px}
 .jdate{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
@@ -976,7 +977,8 @@ function stepHook(type, quiet){
 }
 function quote(){ const n = need(), fit = q => NEED_TH[n].includes(QTH.get(q[0]));
   let pool = S.src === 'all' ? [...NEEDQ[n], ...ALLQ.filter(fit)] : Q[S.src].filter(fit);
-  if (pool.length < 5) pool = S.src === 'all' ? ALLQ : Q[S.src]; const day = Math.floor(fromKey(TODAY()) / 864e5); const [text, src] = pool[(day + S.qoff) % pool.length]; return {text, src}; }
+  if (pool.length < 5) pool = S.src === 'all' ? ALLQ : Q[S.src];
+  const short = pool.filter(q => q[0].length <= 140); if (short.length >= 5) pool = short; const day = Math.floor(fromKey(TODAY()) / 864e5); const [text, src] = pool[(day + S.qoff) % pool.length]; return {text, src}; }
 const pDone = p => p.d != null && diff(TODAY(), p.start) >= p.d;
 const pStarted = p => p.start <= TODAY();
 const pDay = p => diff(TODAY(), p.start) + 1;
@@ -1594,6 +1596,7 @@ function sheetJDay(){
     <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'jd-t');
 }
 
+const libAll = new Set();
 let libTheme = 'all', libType = null, readerId = null, reading = false;
 const ART = {calm:['#2E6F78','#8CC7C1'], grief:['#2B2F5E','#7B78B8'], strength:['#7A3B2E','#E3A061'], kindness:['#7A3550','#E79AA6'], meaning:['#3E2D6B','#B49BE0'], together:['#2F5B3A','#A6D08A'], sleep:['#0D1430','#3C4A86']};
 const artBg = th => { const [a,b] = ART[th] || ART.calm; return `linear-gradient(140deg,${a},${b})`; };
@@ -1616,7 +1619,9 @@ function viewLibrary(inHub){
   if (libType === null) libType = need() === 'calm' ? 'listen' : need() === 'meaning' ? 'read' : 'all';
   const reads = LIBRARY.filter(i => i.type === 'read'), day = Math.floor(fromKey(TODAY()) / 864e5), f = reads[day % reads.length];
   const list = LIBRARY.filter(i => (libType === 'all' || i.type === libType || (libType === 'listen' && i.type === 'sound')) && (libTheme === 'all' || i.th.includes(libTheme)));
-  const group = (type, title) => { const g = list.filter(i => i.type === type); return g.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">${title}</p>${g.map(i => libRow(i)).join('')}</section>` : ''; };
+  const group = (type, title) => { const g = list.filter(i => i.type === type), open = libAll.has(type) || g.length <= 5;   // five at a time, the rest on request
+    return g.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">${title}</p>${(open ? g : g.slice(0, 5)).map(i => libRow(i)).join('')}
+      ${open ? '' : `<button class="link" data-act="libMore" data-k="${type}" style="align-self:center;margin-top:8px">Show all ${g.length}</button>`}</section>` : ''; };
   return `<div class="stack">
     ${inHub ? '<div class="section-h" style="margin-top:6px"><h2>Listen and read</h2></div>' : '<section class="greet"><h1>Library</h1><p class="lede">Words that have helped people for centuries, from many cultures. Every source checked, nothing misattributed.</p></section>'}
     ${dirLib()}
@@ -1628,7 +1633,9 @@ function viewLibrary(inHub){
     ${(() => {
       const themed = LIBRARY.filter(i => libTheme === 'all' || i.th.includes(libTheme));
       const aloud = themed.filter(i => i.type === 'read' && VO['read:' + i.id]);
-      const aloudGroup = aloud.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">Readings, read aloud</p>${aloud.map(i => libRow(i, 'listenItem')).join('')}</section>` : '';
+      const ao = libAll.has('aloud') || aloud.length <= 5;
+      const aloudGroup = aloud.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">Readings, read aloud</p>${(ao ? aloud : aloud.slice(0, 5)).map(i => libRow(i, 'listenItem')).join('')}
+        ${ao ? '' : `<button class="link" data-act="libMore" data-k="aloud" style="align-self:center;margin-top:8px">Show all ${aloud.length}</button>`}</section>` : '';
       if (libType === 'listen') return (group('listen','Guided sessions') + aloudGroup + group('sound','Sounds')) || '<p class="small">Nothing here yet for this theme.</p>';
       return list.length ? group('read','Read') + group('listen','Guided sessions') + group('sound','Sounds') : '<p class="small">Nothing here yet for this theme.</p>';
     })()}
@@ -1668,10 +1675,10 @@ function viewOnboarding(){
   if (ob.i === 0) {
     body = `<div class="ob-hero">${lampSVG(1, 'ob', 4)}</div><h1>A quiet place<br>to return to.</h1>
       <p class="lede" style="font-size:19px;color:var(--ink);font-family:var(--display)">Feel calmer. Know yourself. Become better.</p>
-      <p class="lede">A few lines a day, with gentle questions to guide you. Each day adds a stone to your path. Private, and it stays on your device.</p>`;
+      <p class="lede">A few minutes a day. Each day adds a stone to your path. Everything stays on your phone.</p>`;
     foot = `<button class="btn glow wide" data-act="obNext">Begin</button>`;
   } else if (ob.i === 1) {
-    body = `<h1>What would help you most right now?</h1><p class="lede">Choose one. Your daily thoughts, small steps and evening questions will lean this way. Everything else stays open, and you can change it any time.</p>
+    body = `<h1>What would help you most right now?</h1><p class="lede">Your daily thoughts and questions will lean this way. You can change it any time.</p>
       <div class="opts">${NEEDS.map(n => `<button class="opt" data-act="obNeed" data-k="${n.id}" aria-pressed="${ob.need === n.id}"><span><b style="font-weight:500;display:block">${n.l}</b><span class="small">${n.d}</span></span></button>`).join('')}</div>`;
     foot = `<button class="btn glow wide" data-act="obNext" ${ob.need ? '' : 'disabled'}>Continue</button>`;
   } else {
@@ -1840,7 +1847,7 @@ function renderFlow(){
     case 'arrive':
       if (flow.welcome) {
         body = `<div class="grow"></div><div class="fl-breath"><div class="ring"></div><div class="lbl" id="flbl">Take a breath</div></div>
-          <h1>Welcome${name}</h1><p class="lede">Before anything else, one quiet minute. Just breathe with the circle.</p><div class="grow"></div>`;
+          <h1>Welcome${name}</h1><p class="lede">One quiet minute. Breathe with the circle.</p><div class="grow"></div>`;
         foot = `<button class="btn glow wide welcome-go" data-act="flowGo">${esc(flow.cta)}</button><button class="fl-skip" data-act="flowGo">Skip</button>`;
         break;
       }
@@ -2266,6 +2273,7 @@ document.addEventListener('click', e => {
     case 'dur': sil.total = sil.left = +b.dataset.m * 60; render(); break;
     case 'sound': sil.sound = b.dataset.k; render(); break;
     case 'silToggle': { const v = document.getElementById('voice'); if (v && !sil.running) sil.voice = v.checked; sil.running ? silStop(false) : silStart(); break; }
+    case 'libMore': libAll.add(b.dataset.k); render(); break;
     case 'jOpenDay': jDay = b.dataset.k; sheet = 'jday'; renderSheet(); break;
     case 'jPrev': case 'jNext': { const d = new Date(jMonth.y, jMonth.m + (a === 'jPrev' ? -1 : 1), 1); jMonth = {y:d.getFullYear(), m:d.getMonth()}; render(); break; }
     case 'jSearch': jSearchOpen = !jSearchOpen; if (!jSearchOpen) jq = ''; render(); if (jSearchOpen) setTimeout(() => { const i = document.getElementById('jsearch'); i && i.focus(); }, 50); break;
