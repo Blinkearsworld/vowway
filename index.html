@@ -41,6 +41,8 @@ body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-w
 #scene[data-ph=day]::after,#scene[data-ph=dawn]::after{background:linear-gradient(180deg,rgba(16,24,48,.46) 0%,rgba(16,24,48,.16) 32%,rgba(10,16,34,.40) 60%,rgba(6,10,22,.74) 100%)}
 #scene[data-ph=dusk]::after{background:linear-gradient(180deg,rgba(14,14,40,.40) 0%,rgba(14,14,40,.12) 30%,rgba(8,10,26,.42) 60%,rgba(6,8,22,.74) 100%)}
 #scene .moon{position:absolute;pointer-events:none}
+#scene .moon,#scene .moonref{animation:moonin 1.4s ease .6s both}
+@keyframes moonin{from{opacity:0}}
 #scene .moonlbl{position:absolute;width:160px;text-align:center;font-family:var(--display);font-style:italic;font-size:14px;color:rgba(246,238,218,.85);text-shadow:0 1px 10px rgba(0,0,0,.6);opacity:0;transform:translateY(-4px);transition:opacity .9s ease,transform .9s ease;pointer-events:none}
 #scene .moonlbl.show{opacity:1;transform:none}
 body.flowing #moonhit,body.sheet-open #moonhit{display:none!important}
@@ -901,13 +903,13 @@ function moonHTML(){
     <path d="${path}" fill="url(#mface)" transform="${flip ? 'scale(-1,1)' : ''}"/></svg></div>
     <div class="moonref" style="opacity:${(.25 + .6 * lit).toFixed(2)}"></div><div class="moonlbl">${moonName(p)}</div>`;
 }
-let moonT = null;
+let moonT = null, moonNamed = false;
 function showMoonName(){ const lb = document.querySelector('#scene .moonlbl'); if (!lb) return; lb.classList.add('show'); clearTimeout(moonT); moonT = setTimeout(() => lb.classList.remove('show'), 3800); }
 function placeMoon(){
   const m = document.querySelector('#scene .moon'), f = document.querySelector('#scene .moonref'), h0 = document.getElementById('moonhit');
   if (!m || !S.profile) { if (h0) h0.style.display = 'none'; return; }
-  // the first time the app opens tonight, the moon says its name, then is quiet
-  try { const kk = 'vowway_moonname'; if (localStorage.getItem(kk) !== TODAY()) { localStorage.setItem(kk, TODAY()); setTimeout(showMoonName, 900); } } catch(e){}
+  // each time the app opens, the moon says its name once, after any screen in front of it has gone
+  if (!moonNamed && !document.body.classList.contains('flowing') && !sheet) { moonNamed = true; setTimeout(showMoonName, 1100); }
   const W = innerWidth, H = innerHeight, sc = Math.max(W / BG.w, H / BG.h), ox = (W - BG.w * sc) / 2, oy = (H - BG.h * sc) / 2;
   const hb = (parseFloat(getComputedStyle(document.getElementById('app')).paddingTop) || 0) + 60;   // bottom of the header, even while a screen covers it
   const size = BG.moon.r * sc * 6, x = W * .8, y = hb + BG.moon.r * sc + 14;   // just below the buttons, whatever the phone's top inset
@@ -918,6 +920,10 @@ function placeMoon(){
   if (f) { const w = BG.moon.r * sc * 1.3, h = BG.moon.r * sc * 3.4; Object.assign(f.style, {width:w + 'px', height:h + 'px', left:(x - w / 2) + 'px', top:(oy + BG.ref.y * sc - h / 2) + 'px'}); }
 }
 addEventListener('resize', placeMoon);
+addEventListener('load', placeMoon); addEventListener('pageshow', placeMoon);
+if (window.visualViewport) visualViewport.addEventListener('resize', placeMoon);
+[150, 500, 1200, 2500].forEach(t => setTimeout(placeMoon, t));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { placeMoon(); setTimeout(placeMoon, 400); } });
 function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = true; S.scene = 'lake'; k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
   const el = document.getElementById('scene'); el.dataset.ph = ph; if (photo) el.dataset.photo = '1'; else delete el.dataset.photo;
   el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph === 'dusk' ? 'dawn' : ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
