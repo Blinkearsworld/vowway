@@ -339,6 +339,21 @@ details.roots p{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--lam
 .jday{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
 .jday:first-child{border-top:0;padding-top:4px}
 .jdate{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
+.cal-h{display:flex;align-items:center;justify-content:space-between}
+.cal-h b{font-family:var(--display);font-weight:500;font-size:19px}
+.iconbtn.sm{width:44px;height:44px;font-size:22px}
+.iconbtn.sm:disabled{opacity:.3}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-g i{font-style:normal;font-size:11px;color:var(--muted);padding:2px 0}
+.jd{position:relative;min-height:44px;border:0;border-radius:12px;background:none;color:var(--ink);font:inherit;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.jd:disabled{color:var(--muted);opacity:.35;cursor:default}
+.jd.today{background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.jd.has span{font-weight:600}
+.jd b{width:8px;height:8px;border-radius:50%}
+.jd b.ring{border:1.5px solid var(--lamp-glow);box-sizing:border-box}
+.cal-f .chips{gap:6px 12px}
+button.link{position:relative;display:inline-flex;align-items:center;gap:6px;font-size:14px}
+button.link::after{content:"";position:absolute;inset:-13px -8px}  /* a bigger place for the thumb, the look stays the same */
 .mood30{display:grid;grid-template-columns:repeat(15,1fr);gap:5px}
 .mood30 i{aspect-ratio:1;border-radius:50%;border:1px dashed var(--line);display:block}
 .lockbox{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px 0}
@@ -466,6 +481,7 @@ const ICON = {
   read:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 7h12M6 11h12M6 15h8"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
   wave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/></svg>',
+  search:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
   shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5V6z"/></svg>'
 };
 
@@ -1406,9 +1422,9 @@ function viewPath(){
     <section class="greet"><h1>Your path</h1><p class="lede">A stone for every day, and small promises you keep.</p></section>
     ${lampCard()}
     ${j.phase === 'first' ? firstSteps : ''}
-    <p class="opt-label" style="margin:10px 2px 0">Your vows</p>
-    ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p></section>`}
-    <button class="btn glow wide" data-act="newVow">+ New vow</button>
+    <div class="section-h" style="margin-top:6px"><h2>Your vows</h2>${active.length ? '<button class="link" data-act="newVow">+ New vow</button>' : ''}</div>
+    ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p>
+      <button class="btn glow wide" data-act="newVow" style="margin-top:6px">+ New vow</button></section>`}
     ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}
   </div>`;
 }
@@ -1513,8 +1529,10 @@ function journalDays(q){
 function journalList(){
   const days = journalDays(jq);
   if (!days.length) return `<p class="small">${jq ? 'Nothing matches that search.' : 'Your journal is empty. Your first line will appear here.'}</p>`;
-  return days.map(k => { const d = dayEntries(k);
-    return `<div class="jday"><div class="jdate"><span>${fromKey(k).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</span></div>
+  return days.map(jdayHTML).join('');
+}
+function jdayHTML(k, noDate){ { const d = dayEntries(k);
+    return `<div class="jday">${noDate ? '' : `<div class="jdate"><span>${fromKey(k).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</span></div>`}
       ${d.word ? `<p class="pline" style="font-size:16px">Today I want to be <em>${esc(d.word)}</em>.</p>` : ''}
       ${d.notes.map(r => { const m = MOODS.find(x => x.id === r.mood), qs = r.q || BASEQ;
         return `<div class="entry" style="border:0;padding:4px 0">${m ? `<span class="mood"><b style="background:${m.c}"></b>${m.l}</span>` : ''}
@@ -1523,23 +1541,40 @@ function journalList(){
           <div class="ehead"><span>${r.example ? '<span class="ex">example</span>' : ''}</span><button class="del ${pendingDelete === r.id ? 'confirm' : ''}" data-act="delRefl" data-id="${r.id}">${pendingDelete === r.id ? 'Delete for good?' : 'Delete'}</button></div></div>`; }).join('')}
       ${d.released ? '<p class="small"><em>You wrote something this evening, and let it go.</em></p>' : ''}
       ${d.lamps.length ? `<div class="lit">${d.lamps.map(l => `<span>${esc(l.for)}</span>`).join('')}</div>` : ''}
-    </div>`; }).join('');
+      ${(S.setdown || []).includes(k) ? '<p class="small"><em>You set something down at the flame.</em></p>' : ''}
+    </div>`; }
 }
+let jMonth = null, jSearchOpen = false, jDay = null;
 function viewJournal(){
-  const t = TODAY();
-  const cells = Array.from({length:30}, (_,i) => { const k = add(t, i-29);
-    const r = S.reflections.filter(x => x.date === k && x.mood).pop(), m = r && MOODS.find(x => x.id === r.mood);
-    return `<i title="${shortDate(k)}${m ? ': ' + m.l : ''}" ${m ? `style="background:${m.c};border:0"` : activeDays().has(k) ? 'style="border-style:solid;border-color:var(--lamp-glow)"' : ''}></i>`; }).join('');
+  const t = TODAY(), now = fromKey(t); if (!jMonth) jMonth = {y:now.getFullYear(), m:now.getMonth()};
+  const first = new Date(jMonth.y, jMonth.m, 1), nd = new Date(jMonth.y, jMonth.m + 1, 0).getDate(), lead = first.getDay(), A = activeDays();
+  const cells = [...Array(lead).fill('<span></span>'), ...Array.from({length:nd}, (_,i) => {
+    const k = dk(new Date(jMonth.y, jMonth.m, i + 1)), fut = k > t;
+    const r = S.reflections.filter(x => x.date === k && x.mood).pop(), m = r && MOODS.find(x => x.id === r.mood), has = dayHas(k);
+    return `<button class="jd ${k === t ? 'today' : ''} ${has ? 'has' : ''} ${A.has(k) ? 'walked' : ''}" ${fut ? 'disabled' : `data-act="jOpenDay" data-k="${k}"`} aria-label="${shortDate(k)}${m ? ', ' + m.l : ''}">
+      <span>${i + 1}</span>${m ? `<b style="background:${m.c}"></b>` : A.has(k) ? '<b class="ring"></b>' : ''}</button>`; })].join('');
+  const isNow = jMonth.y === now.getFullYear() && jMonth.m === now.getMonth();
+  const last = journalDays('')[0];
   return `<div class="stack">
-    <section class="greet"><h1>Your journal</h1><p class="lede">Everything you’ve written, one day at a time. Only you can see it.</p></section>
-    <section class="card"><div class="ptop"><p class="eyebrow">Your last 30 days</p><button class="link" data-act="openLetter">This week’s letter ›</button></div>
-      <div class="mood30">${cells}</div>
-      <div class="chips">${MOODS.map(m => `<span class="mood"><b style="background:${m.c}"></b>${m.l}</span>`).join('')}</div></section>
-    <input type="text" id="jsearch" placeholder="Search your journal" value="${esc(jq)}" aria-label="Search your journal">
-    <section class="card" id="jlist" style="gap:0">${journalList()}</section>
-    <section class="card quiet privacy">${ICON.shield}<div class="stack" style="gap:8px"><p class="small">${pinKey ? 'Your journal is encrypted with your passcode and stays on this device. Not even we can read it.' : 'Your journal stays on this device and is never sent to a server. Add a passcode in Settings to encrypt it.'}</p>
-      <button class="link" data-act="copyAll">Copy my whole journal</button></div></section>
+    <section class="greet"><h1>Your journal</h1><p class="lede">Only you can see it.</p></section>
+    <section class="card cal">
+      <div class="cal-h"><button class="iconbtn sm" data-act="jPrev" aria-label="Previous month">‹</button>
+        <b>${first.toLocaleDateString('en-US', {month:'long', year:'numeric'})}</b>
+        <button class="iconbtn sm" data-act="jNext" aria-label="Next month" ${isNow ? 'disabled' : ''}>›</button></div>
+      <div class="cal-g">${['S','M','T','W','T','F','S'].map(d => `<i>${d}</i>`).join('')}${cells}</div>
+      <div class="cal-f"><div class="chips">${MOODS.map(m => `<span class="mood"><b style="background:${m.c}"></b>${m.l}</span>`).join('')}</div></div>
+      <div class="row" style="justify-content:space-between"><button class="link" data-act="jSearch">${ICON.search} Search</button><button class="link" data-act="openLetter">This week’s letter ›</button></div>
+    </section>
+    ${jSearchOpen ? `<input type="search" id="jsearch" placeholder="Search your journal" value="${esc(jq)}" aria-label="Search your journal">
+      <section class="card" id="jlist" style="gap:0">${jq ? journalList() : '<p class="small">Type a word, a name, a feeling.</p>'}</section>` :
+      `<section class="card" style="gap:0"><p class="eyebrow">${last ? 'Last entry' : 'Your journal'}</p>${last ? jdayHTML(last) : '<p class="small">Your journal is empty. Your first line will appear here.</p>'}</section>`}
   </div>`;
+}
+function dayHas(k){ const d = dayEntries(k); return !!(d.word || d.notes.length || d.released || d.lamps.length); }
+function sheetJDay(){
+  const k = jDay; return sheetWrap(`<div class="stack"><h2 id="jd-t">${fromKey(k).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</h2>
+    ${dayHas(k) || (S.setdown || []).includes(k) ? jdayHTML(k, true) : '<p class="small">Nothing written this day. That’s all right.</p>'}
+    <button class="btn ghost wide" data-act="closeSheet">Close</button></div>`, 'jd-t');
 }
 
 let libTheme = 'all', libType = null, readerId = null, reading = false;
@@ -1696,6 +1731,8 @@ function sheetSettings(){
           : `<p class="small" style="margin-bottom:8px">Add a passcode to encrypt your journal on this device. If you forget it, the journal can’t be recovered.</p>
              <div class="row"><input type="password" id="newpin" inputmode="numeric" maxlength="8" placeholder="4–8 digits" aria-label="New passcode"><input type="password" id="newpin2" inputmode="numeric" maxlength="8" placeholder="Repeat" aria-label="Repeat passcode"></div>
              <p class="err" id="pinerr" hidden></p><button class="btn ghost" data-act="pinOn" style="margin-top:8px">Lock with passcode</button>`}</div>
+      <div class="card quiet"><p class="eyebrow">Your journal</p><p class="small" style="margin-top:6px">${pinKey ? 'Your journal is encrypted with your passcode and stays on this device.' : 'Your journal stays on this device and is never sent anywhere. Add a passcode above to encrypt it.'}</p>
+        <button class="link" data-act="copyAll">Copy my whole journal</button></div>
       <div class="card quiet"><p class="eyebrow">About vowway</p>
         <p class="small" style="margin-top:6px">vowway is a quiet daily companion for calm, reflection and small good steps. It is open to every path and belongs to none.</p>
         <p class="small" style="margin-top:8px"><b>Your privacy.</b> Everything you write stays on this phone. There are no accounts, no servers, no ads and no tracking. We collect nothing, so we have nothing to share or lose.</p>
@@ -1898,7 +1935,7 @@ function render(){
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder, season:sheetSeason}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder, season:sheetSeason, jday:sheetJDay}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -2212,6 +2249,9 @@ document.addEventListener('click', e => {
     case 'dur': sil.total = sil.left = +b.dataset.m * 60; render(); break;
     case 'sound': sil.sound = b.dataset.k; render(); break;
     case 'silToggle': { const v = document.getElementById('voice'); if (v && !sil.running) sil.voice = v.checked; sil.running ? silStop(false) : silStart(); break; }
+    case 'jOpenDay': jDay = b.dataset.k; sheet = 'jday'; renderSheet(); break;
+    case 'jPrev': case 'jNext': { const d = new Date(jMonth.y, jMonth.m + (a === 'jPrev' ? -1 : 1), 1); jMonth = {y:d.getFullYear(), m:d.getMonth()}; render(); break; }
+    case 'jSearch': jSearchOpen = !jSearchOpen; if (!jSearchOpen) jq = ''; render(); if (jSearchOpen) setTimeout(() => { const i = document.getElementById('jsearch'); i && i.focus(); }, 50); break;
     case 'openRefl': afterRefl = null; selMood = null; sheet = 'refl'; renderSheet(); break;
     case 'openSettings': sheet = 'settings'; renderSheet(); break;
     case 'closeSheet': stopReading(); if (sheet === 'player') { if (sil.running) silStop(false); sil.custom = null; } sheet = null; afterRefl = null; render(); break;
@@ -2253,7 +2293,7 @@ document.addEventListener('change', e => {
     if (!confirm('Replace everything on this phone with this backup?')) return;
     localStorage.setItem(KEY, txt); location.reload(); });
 });
-document.addEventListener('input', e => { if (e.target.id === 'remtime' && e.target.value) { S.reminderTime = e.target.value; save(); const g = document.getElementById('gcal'); if (g) g.href = googleCalUrl(e.target.value); } if (e.target.id === 'ctitle' || e.target.id === 'setitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) l.innerHTML = journalList(); } });
+document.addEventListener('input', e => { if (e.target.id === 'remtime' && e.target.value) { S.reminderTime = e.target.value; save(); const g = document.getElementById('gcal'); if (g) g.href = googleCalUrl(e.target.value); } if (e.target.id === 'ctitle' || e.target.id === 'setitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) l.innerHTML = jq ? journalList() : '<p class="small">Type a word, a name, a feeling.</p>'; } });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && flow) { closeFlow(); return; }
   if (e.key === 'Escape' && sheet) { stopReading(); if (sheet === 'player' && sil.running) silStop(false); sheet = null; afterRefl = null; render(); }
