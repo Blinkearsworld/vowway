@@ -29,7 +29,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;overscroll-behavior-y:none}
+html,body{min-height:100%;margin:0;overscroll-behavior-y:none}
 html{background:#0E1424}
 body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
 #scene{position:fixed;inset:0;z-index:-2;transition:opacity 1s}
@@ -44,7 +44,7 @@ body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-w
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--lamp-glow);outline-offset:2px;border-radius:8px}
-.app{max-width:440px;margin:0 auto;min-height:100%;padding:env(safe-area-inset-top) 18px 110px}
+.app{max-width:440px;margin:0 auto;min-height:calc(100vh + 1px);min-height:calc(100lvh + 1px);box-sizing:border-box;padding:env(safe-area-inset-top) 18px 110px}
 .app.ob-mode{padding-bottom:24px;display:flex;flex-direction:column}
 
 /* header */
@@ -384,9 +384,14 @@ body.flowing .app{visibility:hidden}
 .fnote .fq{font-family:var(--display);font-style:italic;font-size:15px;margin-top:6px}
 .fnote .fq span{display:block;font-family:var(--body);font-style:normal;font-size:12px;color:var(--muted)}
 .nav button{position:relative}
+.doors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.door{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px 16px;border-radius:22px;border:1px solid var(--line);background:color-mix(in srgb,var(--solid) 55%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);font:inherit;cursor:pointer}
+.door b{font-family:var(--display);font-weight:500;font-size:21px}
+.door span{font-size:13px;color:var(--muted)}
+.door .door-ic svg{width:26px;height:26px;color:var(--lamp-glow)}
 .nav::after{content:"";position:absolute;left:0;right:0;top:100%;height:140px;background:inherit;pointer-events:none}
 .nav .new::after{content:"";position:absolute;top:4px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:var(--lamp-glow)}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:6px 4px max(8px, calc(env(safe-area-inset-bottom) - 8px));z-index:20}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:color-mix(in srgb,var(--solid) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--tabs,5),1fr);padding:6px 4px 0;height:calc(62px + max(0px, env(safe-area-inset-bottom) - 8px));box-sizing:border-box;align-content:start;z-index:20}
 .nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding:6px 0}
 .nav svg{width:22px;height:22px}
 .nav button[aria-current="page"]{color:var(--ink)}
@@ -1248,17 +1253,30 @@ function lampsForCard(){
     <div class="row"><input type="text" id="lampfor" maxlength="40" placeholder="A name, or just a thought"><button class="btn primary" data-act="lightLamp">Light</button></div>
   </section>`;
 }
+let quietOpen = false;
 const quietSeg = () => sil.running ? '' : `<div class="seg two" role="group" aria-label="Quiet">${[['silence','Be still'],['library','Library']].map(([k,l]) => `<button data-act="tab" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join('')}</div>`;
+function viewQuiet(){
+  if (quietOpen || sil.running) return viewSilence();
+  const wk = S.silence.filter(s => diff(TODAY(), s.date) < 7).reduce((a,s) => a + s.min, 0);
+  return `<div class="stack">
+    <section class="greet"><h1>Quiet</h1><p class="lede">Be still for a moment, or listen and read.</p></section>
+    <div class="doors">
+      <button class="door" data-act="quietOpen" data-k="silence"><span class="door-ic">${ICON.silence}</span><b>Silence</b><span>1 to 10 minutes</span></button>
+      <button class="door" data-act="quietOpen" data-k="sleep"><span class="door-ic">${ICON.moon}</span><b>Sleep</b><span>Sound and a soft voice</span></button>
+    </div>
+    ${wk ? `<p class="small" style="text-align:center;margin-top:-4px">${plural(wk,'minute')} of silence this week</p>` : ''}
+    ${viewLibrary(true)}
+  </div>`;
+}
 function viewSilence(){
   const sleep = sil.mode === 'sleep';
   const wk = S.silence.filter(s => diff(TODAY(), s.date) < 7).reduce((a,s) => a + s.min, 0);
   const durs = sleep ? [20] : [1,3,5,10];
   const sounds = sleep ? [['ocean','Sea'],['rain','Rain'],['wind','Wind']] : [['none','None'],['tone','Tone'],['rain','Rain'],['ocean','Sea'],['wind','Wind']];
   return `<div class="stack">
-    ${sil.custom ? '' : quietSeg()}
+    ${sil.custom || sil.running ? '' : '<button class="link" data-act="quietBack" style="align-self:flex-start">‹ Quiet</button>'}
     ${sil.custom ? `<section class="greet"><p class="date">${esc(sil.custom.by)}</p><h1>${esc(sil.custom.t)}</h1><p class="lede">${sil.custom.type === 'listen' ? 'Press Begin, and let the voice guide you.' : 'Press Begin, and let the sound carry you.'}</p></section>` :
     `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go. A gentle voice and a soft sound will stay with you as you drift off.' : 'Stop for a moment. There’s nothing you need to do here.'}</p></section>`}
-    <div class="seg two" role="group" aria-label="Mode">${[['silence','Silence'],['sleep','Sleep']].map(([k,l]) => `<button data-act="silMode" data-k="${k}" aria-pressed="${sil.mode===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div>
     <div class="breath-wrap"><div class="breath ${sil.running && !sleep ? 'on' : ''}"></div>
       <div class="breath-center"><div class="breath-label" id="bl">${sil.running ? 'Breathe in' : sleep ? 'Rest' : 'Ready when you are'}</div><div class="time" id="tl">${mmss(sil.left)}</div></div></div>
     ${sleep ? '<p class="small" style="text-align:center">20 minutes. It keeps playing when your screen locks, then fades out by itself.</p>' : ''}
@@ -1506,14 +1524,13 @@ function dirLib(){
   const all = [...listen, ...r]; if (!all.length) return '';
   return `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">For your direction: ${DIRNAME[n]}</p>${all.map(i => libRow(i)).join('')}</section>`;
 }
-function viewLibrary(){
+function viewLibrary(inHub){
   if (libType === null) libType = need() === 'calm' ? 'listen' : need() === 'meaning' ? 'read' : 'all';
   const reads = LIBRARY.filter(i => i.type === 'read'), day = Math.floor(fromKey(TODAY()) / 864e5), f = reads[day % reads.length];
   const list = LIBRARY.filter(i => (libType === 'all' || i.type === libType || (libType === 'listen' && i.type === 'sound')) && (libTheme === 'all' || i.th.includes(libTheme)));
   const group = (type, title) => { const g = list.filter(i => i.type === type); return g.length ? `<section class="card" style="gap:4px"><p class="eyebrow" style="margin-bottom:8px">${title}</p>${g.map(i => libRow(i)).join('')}</section>` : ''; };
   return `<div class="stack">
-    ${quietSeg()}
-    <section class="greet"><h1>Library</h1><p class="lede">Words that have helped people for centuries, from many cultures. Every source checked, nothing misattributed.</p></section>
+    ${inHub ? '<div class="section-h" style="margin-top:6px"><h2>Listen and read</h2></div>' : '<section class="greet"><h1>Library</h1><p class="lede">Words that have helped people for centuries, from many cultures. Every source checked, nothing misattributed.</p></section>'}
     ${dirLib()}
     <section class="card featured"><div class="art" style="background:${artBg(f.th[0])}"></div><p class="eyebrow go">Today in the library</p><h3>${esc(f.t)}</h3>
       <q>${esc(f.text.split('\n')[0])}</q><span class="small">${esc(f.by)}</span>
@@ -1841,7 +1858,7 @@ function render(){
   try { const sd = JSON.parse(localStorage.getItem('vowway_setdown') || '[]'); if (sd.length && S.profile) { S.setdown = S.setdown || []; sd.forEach(k => { if (!S.setdown.includes(k)) S.setdown.push(k); }); localStorage.removeItem('vowway_setdown'); save(); } } catch(e){}
   if (!S.profile) { app.className = 'app ob-mode'; app.innerHTML = viewOnboarding(); layer.innerHTML = ''; if (ob.i >= 2) setTimeout(() => { const i = document.getElementById('obname'); i && i.focus(); }, 60); return; }
   app.className = 'app';
-  app.innerHTML = header() + {today:viewToday, silence:viewSilence, library:viewLibrary, path:viewPath, journal:viewJournal}[tab]() + nav();
+  app.innerHTML = header() + {today:viewToday, silence:viewQuiet, library:viewQuiet, path:viewPath, journal:viewJournal}[tab]() + nav();
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
@@ -1981,7 +1998,7 @@ function silStop(finished){
   render();
   if (marked) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); }
 }
-function setSil(mode, mins, sound){ sil.custom = null; sil.mode = mode; sil.total = sil.left = mins * 60; if (sound) sil.sound = sound; }
+function setSil(mode, mins, sound){ quietOpen = true; sil.custom = null; sil.mode = mode; sil.total = sil.left = mins * 60; if (sound) sil.sound = sound; }
 
 /* night sky: a few slow stars in evening light */
 (function stars(){
@@ -2037,7 +2054,9 @@ document.addEventListener('click', e => {
       save(); tab = 'today'; render(); window.scrollTo(0,0); openFlow(true); flow.welcome = true; renderFlow(); welcomeVoice(); break; }
     case 'redoOb': Object.assign(ob, {i:0, need:null, reasons:[], time:null, name:''}); S.profile = null; save(); sheet = null; render(); break;
 
-    case 'tab': go(b.dataset.tab); break;
+    case 'tab': quietOpen = false; go(b.dataset.tab); break;
+    case 'quietOpen': setSil(b.dataset.k, b.dataset.k === 'sleep' ? 20 : 3, b.dataset.k === 'sleep' ? 'ocean' : 'tone'); sil.voice = true; render(); window.scrollTo(0,0); break;
+    case 'quietBack': if (sil.running) silStop(false); quietOpen = false; render(); window.scrollTo(0,0); break;
     case 'backup': { S.lastBackup = dk(new Date()); save(); setTimeout(async () => {
         const raw = localStorage.getItem(KEY) || JSON.stringify(S), name = `vowway-backup-${dk(new Date())}.json`;
         try { const f = new File([raw], name, {type:'application/json'});
