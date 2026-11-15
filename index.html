@@ -418,6 +418,14 @@ body.flowing .app{visibility:hidden}
 .doors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .door{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px 16px;border-radius:22px;border:1px solid var(--line);background:color-mix(in srgb,var(--solid) 55%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);font:inherit;cursor:pointer}
 .door{text-decoration:none}
+.fold{border:1px solid var(--line);border-radius:16px;padding:0 16px;background:rgba(255,255,255,.03)}
+.fold summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:52px;cursor:pointer}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary span{font-size:15px}
+.fold summary b{margin-left:auto;font-weight:500;font-size:14.5px;color:var(--muted);text-align:right}
+.fold summary::after{content:'›';font-size:22px;color:var(--muted);transition:transform .2s}
+.fold[open] summary::after{transform:rotate(90deg)}
+.fold[open]{padding-bottom:14px}
 .small-doors .door{padding:16px 15px;gap:6px}
 .small-doors .door b{font-size:19px}
 .small-doors .sd-dot{margin-bottom:4px}
@@ -1792,8 +1800,8 @@ function sheetSettings(){
       <div><p class="opt-label">Your name</p><div class="row"><input type="text" id="setname" maxlength="30" placeholder="Your first name" value="${esc((S.profile && S.profile.name) || '')}"><button class="btn ghost" data-act="saveName">Save</button></div></div>
       <div><p class="opt-label">Your direction</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
       <div><p class="opt-label">Light</p><div class="seg" style="grid-template-columns:repeat(3,1fr)">${[['auto','Live'],['day','Day'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${(S.modePref === k && (k === 'auto' || S.modeDay === 'always')) || (k === 'auto' && S.modeDay !== 'always')}">${l}</button>`).join('')}</div></div>
-      <div><p class="opt-label">Where your daily thought comes from</p>
-        <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
+      <details class="fold"><summary><span>Daily thought from</span><b>${esc(SRC[S.src] || SRC.all)}</b></summary>
+        <div class="trad" style="margin-top:10px">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></details>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
       <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a copy to iCloud Drive now and then.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
         <div class="row"><button class="btn ghost" data-act="backup" style="flex:1">Save a backup</button><button class="btn ghost" data-act="restore" style="flex:1">Restore</button></div>
@@ -1806,11 +1814,11 @@ function sheetSettings(){
              <p class="err" id="pinerr" hidden></p><button class="btn ghost" data-act="pinOn" style="margin-top:8px">Lock with passcode</button>`}</div>
       <div class="card quiet"><p class="eyebrow">Your journal</p><p class="small" style="margin-top:6px">${pinKey ? 'Your journal is encrypted with your passcode and stays on this device.' : 'Your journal stays on this device and is never sent anywhere. Add a passcode above to encrypt it.'}</p>
         <button class="link" data-act="copyAll">Copy my whole journal</button></div>
-      <div class="card quiet"><p class="eyebrow">About vowway</p>
+      <details class="fold"><summary><span>About vowway</span><b>Privacy, not medical care</b></summary><div class="stack" style="gap:0;margin-top:4px">
         <p class="small" style="margin-top:6px">vowway is a quiet daily companion for calm, reflection and small good steps. It is open to every path and belongs to none.</p>
         <p class="small" style="margin-top:8px"><b>Your privacy.</b> Everything you write stays on this phone. There are no accounts, no servers, no ads and no tracking. We collect nothing, so we have nothing to share or lose.</p>
         <p class="small" style="margin-top:8px"><b>Not medical care.</b> vowway is not medical, psychological or professional advice, and does not replace it. If you are in danger or thinking of harming yourself, contact local emergency services, call or text 988 in the US, or find a helpline in your country at <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--lamp)">findahelpline.com</a>.</p>
-        <p class="small" style="margin-top:8px">Texts are from the public domain or written by vowway. Use the app at your own discretion.</p></div>
+        <p class="small" style="margin-top:8px">Texts are from the public domain or written by vowway. Use the app at your own discretion.</p></div></details>
       ${/[?&]dev\b/.test(location.search) ? `<div class="card quiet"><p class="eyebrow">Prototype tools</p><p class="small">For showing how the app grows over time. This replaces your own entries with an example.</p>
         <button class="btn ghost" data-act="demoPath" style="${pendingDelete==='demo' ? 'color:var(--rose);border-color:var(--rose)' : ''}">${pendingDelete==='demo' ? 'Tap again: your entries will be replaced' : 'Preview the path, 30 days in'}</button></div>` : ''}
       <div class="row" style="flex-wrap:wrap;gap:6px 14px"><button class="link" data-act="redoOb">Answer the welcome questions again</button>
