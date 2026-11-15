@@ -155,7 +155,7 @@ h3{font-size:17px;line-height:1.35}
 .chip:disabled{opacity:.5}
 .row{display:flex;gap:8px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-input[type=text],input[type=search],textarea{width:100%;background:var(--field);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;min-width:0}
+input[type=text],input[type=search],input[type=password],textarea{width:100%;background:var(--field);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;min-width:0}
 textarea{resize:none;min-height:64px;line-height:1.5}
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
 .btn{border-radius:14px;padding:10px 16px;font-size:14px;font-weight:500;border:1px solid transparent;white-space:nowrap}
@@ -915,7 +915,7 @@ function placeMoon(){
   if (f) { const w = BG.moon.r * sc * 1.3, h = BG.moon.r * sc * 3.4; Object.assign(f.style, {width:w + 'px', height:h + 'px', left:(x - w / 2) + 'px', top:(oy + BG.ref.y * sc - h / 2) + 'px'}); }
 }
 addEventListener('resize', placeMoon);
-function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = (S.scene || 'lake') === 'lake', k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
+function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = true; S.scene = 'lake'; k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
   const el = document.getElementById('scene'); el.dataset.ph = ph; if (photo) el.dataset.photo = '1'; else delete el.dataset.photo;
   el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph === 'dusk' ? 'dawn' : ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
   if (!el.querySelector('.moon')) { const h = document.getElementById('moonhit'); if (h) h.style.display = 'none'; }
@@ -1431,7 +1431,7 @@ function googleCalUrl(tm){
 }
 function reminderBlock(){
   const tm = remTime(), inClaude = /claude\.ai|claudeusercontent/.test(location.host);
-  return `<div class="stack" style="gap:10px"><p class="small">A gentle nudge once a day, at a time that suits you. It goes into your own calendar; vowway never sends you anything.</p>
+  return `<div class="stack" style="gap:10px"><p class="small">A gentle nudge once a day, in your own calendar.</p>
     <div class="row" style="align-items:center"><span class="small" style="flex:1">Remind me at</span><input type="time" id="remtime" value="${tm}" style="background:var(--field);border:1px solid var(--line);border-radius:14px;padding:9px 12px;color:var(--ink)"></div>
     <button class="btn glow wide" data-act="remIcs">Add to iPhone calendar</button>
     <a class="btn ghost wide" style="text-align:center;text-decoration:none;display:block" href="${googleCalUrl(tm)}" target="_blank" rel="noopener" id="gcal">Add to Google Calendar</a>
@@ -1760,19 +1760,18 @@ function sheetSettings(){
   return sheetWrap(`<div class="stack">
       <h2 id="st-t">Settings</h2>
       <div><p class="opt-label">Your name</p><div class="row"><input type="text" id="setname" maxlength="30" placeholder="Your first name" value="${esc((S.profile && S.profile.name) || '')}"><button class="btn ghost" data-act="saveName">Save</button></div></div>
-      <div><p class="opt-label">Your place</p><div class="pals">${SCENES.map(([k,l]) => `<button data-act="setScene" data-k="${k}" aria-pressed="${S.scene===k}"><i>${sceneSVG(k, curPhase(), 'p' + k)}</i>${l}</button>`).join('')}</div></div>
-      <div><p class="opt-label">Your direction. Daily thoughts, small steps and your home screen lean this way.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
-      <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(3,1fr)">${[['auto','Live'],['day','Day'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${(S.modePref === k && (k === 'auto' || S.modeDay === 'always')) || (k === 'auto' && S.modeDay !== 'always')}">${l}</button>`).join('')}</div></div>
-      <div><p class="opt-label">What gives you strength? Optional. Your daily word, and words on hard days, will come from it.</p>
+      <div><p class="opt-label">Your direction</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Light</p><div class="seg" style="grid-template-columns:repeat(3,1fr)">${[['auto','Live'],['day','Day'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${(S.modePref === k && (k === 'auto' || S.modeDay === 'always')) || (k === 'auto' && S.modeDay !== 'always')}">${l}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Where your daily thought comes from</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
-      <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a copy now and then to iCloud Drive or email (not “On My iPhone”), so a new or lost phone doesn’t mean a lost path.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
+      <div><p class="opt-label">Backup</p><p class="small" style="margin-bottom:8px">Everything lives only on this phone. Save a copy to iCloud Drive now and then.${pinKey ? ' The backup stays locked with your passcode.' : ''}</p>
         <div class="row"><button class="btn ghost" data-act="backup" style="flex:1">Save a backup</button><button class="btn ghost" data-act="restore" style="flex:1">Restore</button></div>
         <input type="file" id="restorefile" accept=".json,application/json,text/plain" hidden>
         <p class="small" style="margin-top:6px">${S.lastBackup ? `Last saved: ${daysSince(S.lastBackup) === 0 ? 'today' : daysSince(S.lastBackup) === 1 ? 'yesterday' : daysSince(S.lastBackup) + ' days ago'}` : 'Not saved yet.'}</p></div>
       <div><p class="opt-label">Privacy</p>
         ${pinKey ? `<div class="row"><span class="small" style="flex:1;align-self:center">Your journal is encrypted with a passcode.</span><button class="btn ghost" data-act="pinOff">Turn off</button></div>`
-          : `<p class="small" style="margin-bottom:8px">Add a passcode to encrypt your journal on this device. If you forget it, the journal can’t be recovered.</p>
+          : `<p class="small" style="margin-bottom:8px">Lock your journal with a passcode. If you forget it, it can’t be recovered.</p>
              <div class="row"><input type="password" id="newpin" inputmode="numeric" maxlength="8" placeholder="4–8 digits" aria-label="New passcode"><input type="password" id="newpin2" inputmode="numeric" maxlength="8" placeholder="Repeat" aria-label="Repeat passcode"></div>
              <p class="err" id="pinerr" hidden></p><button class="btn ghost" data-act="pinOn" style="margin-top:8px">Lock with passcode</button>`}</div>
       <div class="card quiet"><p class="eyebrow">Your journal</p><p class="small" style="margin-top:6px">${pinKey ? 'Your journal is encrypted with your passcode and stays on this device.' : 'Your journal stays on this device and is never sent anywhere. Add a passcode above to encrypt it.'}</p>
