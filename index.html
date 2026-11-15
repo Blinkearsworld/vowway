@@ -41,6 +41,11 @@ body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-w
 #scene[data-ph=day]::after,#scene[data-ph=dawn]::after{background:linear-gradient(180deg,rgba(16,24,48,.46) 0%,rgba(16,24,48,.16) 32%,rgba(10,16,34,.40) 60%,rgba(6,10,22,.74) 100%)}
 #scene[data-ph=dusk]::after{background:linear-gradient(180deg,rgba(14,14,40,.40) 0%,rgba(14,14,40,.12) 30%,rgba(8,10,26,.42) 60%,rgba(6,8,22,.74) 100%)}
 #scene .moon{position:absolute;pointer-events:none}
+#scene .moonlbl{position:absolute;width:160px;text-align:center;font-family:var(--display);font-style:italic;font-size:14px;color:rgba(246,238,218,.85);text-shadow:0 1px 10px rgba(0,0,0,.6);opacity:0;transform:translateY(-4px);transition:opacity .9s ease,transform .9s ease;pointer-events:none}
+#scene .moonlbl.show{opacity:1;transform:none}
+body.flowing #moonhit,body.sheet-open #moonhit{display:none!important}
+#moonhit{position:fixed;z-index:15;background:none;border:0;border-radius:50%;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;display:none}
+.moonday{font-family:var(--display);font-style:italic;font-size:16px;margin:4px 0 8px;color:rgba(246,238,218,.9)}
 #scene .moon svg{width:100%;height:100%;overflow:visible}
 #scene .moonref{position:absolute;pointer-events:none;border-radius:50%;filter:blur(4px);background:radial-gradient(ellipse at 50% 35%,rgba(246,238,216,.55),rgba(246,238,216,0) 70%);animation:shimmer 6s ease-in-out infinite}
 @keyframes shimmer{50%{transform:scaleX(.8) scaleY(1.06);opacity:.75}}
@@ -876,6 +881,10 @@ let sceneKey = '';
 const BG = {w:972, h:1619, moon:{x:830, y:324, r:34}, ref:{x:849, y:1272}};
 function moonAge(d = new Date()){ const p = ((d - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588853) % 1; return p < 0 ? p + 1 : p; }
 const SOUTH = (() => { try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Apia|Noumea|Efate)|^America\/(Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas|Bahia|Recife|Fortaleza|Belem)|^Africa\/(Johannesburg|Maputo|Harare|Lusaka|Windhoek|Gaborone|Maseru|Mbabane|Lubumbashi|Blantyre|Luanda)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch(e){ return false; } })();
+function moonName(p = moonAge()){
+  return p < .034 || p > .966 ? 'New moon' : p < .216 ? 'Waxing crescent' : p < .284 ? 'First quarter' : p < .466 ? 'Waxing gibbous'
+    : p < .534 ? 'Full moon' : p < .716 ? 'Waning gibbous' : p < .784 ? 'Last quarter' : 'Waning crescent';
+}
 function moonHTML(){
   const p = moonAge(), k = Math.cos(2 * Math.PI * p), lit = (1 - k) / 2;
   if (lit < .025) return '';                      // new moon: only the stars tonight
@@ -887,20 +896,29 @@ function moonHTML(){
     <circle r="${(110 + 40 * lit).toFixed(0)}" fill="url(#mglow)"/>
     <circle r="${r}" fill="rgba(200,210,240,.07)"/>
     <path d="${path}" fill="url(#mface)" transform="${flip ? 'scale(-1,1)' : ''}"/></svg></div>
-    <div class="moonref" style="opacity:${(.25 + .6 * lit).toFixed(2)}"></div>`;
+    <div class="moonref" style="opacity:${(.25 + .6 * lit).toFixed(2)}"></div><div class="moonlbl">${moonName(p)}</div>`;
 }
+let moonT = null;
+function showMoonName(){ const lb = document.querySelector('#scene .moonlbl'); if (!lb) return; lb.classList.add('show'); clearTimeout(moonT); moonT = setTimeout(() => lb.classList.remove('show'), 3800); }
 function placeMoon(){
-  const m = document.querySelector('#scene .moon'), f = document.querySelector('#scene .moonref'); if (!m) return;
+  const m = document.querySelector('#scene .moon'), f = document.querySelector('#scene .moonref'), h0 = document.getElementById('moonhit');
+  if (!m || !S.profile) { if (h0) h0.style.display = 'none'; return; }
+  // the first time the app opens tonight, the moon says its name, then is quiet
+  try { const kk = 'vowway_moonname'; if (localStorage.getItem(kk) !== TODAY()) { localStorage.setItem(kk, TODAY()); setTimeout(showMoonName, 900); } } catch(e){}
   const W = innerWidth, H = innerHeight, sc = Math.max(W / BG.w, H / BG.h), ox = (W - BG.w * sc) / 2, oy = (H - BG.h * sc) / 2;
   const hd = document.querySelector('.top'), hb = hd ? hd.getBoundingClientRect().bottom + window.scrollY : H * .1;
   const size = BG.moon.r * sc * 6, x = W * .8, y = hb + BG.moon.r * sc + 14;   // just below the buttons, whatever the phone's top inset
   Object.assign(m.style, {width:size + 'px', height:size + 'px', left:(x - size / 2) + 'px', top:(y - size / 2) + 'px'});
+  const lb = document.querySelector('#scene .moonlbl'); if (lb) Object.assign(lb.style, {left:(x - 80) + 'px', top:(y + BG.moon.r * sc + 8) + 'px'});
+  let hit = document.getElementById('moonhit'); if (!hit) { hit = document.createElement('button'); hit.id = 'moonhit'; hit.setAttribute('aria-label', 'Moon'); hit.onclick = () => showMoonName(); document.body.appendChild(hit); }
+  const r = BG.moon.r * sc * 1.8; Object.assign(hit.style, {left:(x - r) + 'px', top:(y - r) + 'px', width:2 * r + 'px', height:2 * r + 'px', display:'block'});
   if (f) { const w = BG.moon.r * sc * 1.3, h = BG.moon.r * sc * 3.4; Object.assign(f.style, {width:w + 'px', height:h + 'px', left:(x - w / 2) + 'px', top:(oy + BG.ref.y * sc - h / 2) + 'px'}); }
 }
 addEventListener('resize', placeMoon);
 function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = (S.scene || 'lake') === 'lake', k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
   const el = document.getElementById('scene'); el.dataset.ph = ph; if (photo) el.dataset.photo = '1'; else delete el.dataset.photo;
   el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
+  if (!el.querySelector('.moon')) { const h = document.getElementById('moonhit'); if (h) h.style.display = 'none'; }
   placeMoon(); }
 /* seasons many people keep; a person who chose one tradition sees only that tradition's season (and the new year) */
 function easter(y){ const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
@@ -1291,6 +1309,7 @@ function viewToday(){
   return `<div class="stack">
     <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
       ${mem ? `<p class="memory">${esc(mem)}</p>` : ''}
+      ${['Full moon','New moon'].includes(moonName()) ? `<p class="moonday">${moonName()} tonight.</p>` : ''}
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
     ${main[0] || ''}
     ${notice}
@@ -1948,7 +1967,7 @@ function flowSaveRefl(release){
 
 /* ---------- render ---------- */
 const app = document.getElementById('app'), layer = document.getElementById('layer');
-function fadeOrb(){ const o = document.querySelector('#scene .orb'); if (o) o.style.opacity = Math.max(0, 1 - window.scrollY / 140).toFixed(2); }
+function fadeOrb(){ const o = document.querySelector('#scene .orb'), v = Math.max(0, 1 - window.scrollY / 140); if (o) o.style.opacity = v.toFixed(2); const h = document.getElementById('moonhit'), l = document.querySelector('#scene .moonlbl'); if (h) h.style.pointerEvents = v > .5 ? 'auto' : 'none'; if (l) l.style.opacity = v < 1 ? v.toFixed(2) : ''; }
 window.addEventListener('scroll', fadeOrb, {passive:true});
 function render(){
   document.documentElement.dataset.phase = curPhase(); drawScene(); requestAnimationFrame(placeMoon);
