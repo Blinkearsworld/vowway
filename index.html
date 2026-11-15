@@ -1340,7 +1340,7 @@ function viewToday(){
   const notice = seasonCard() || backupNudge();
   const more = [!first || S.journey.done[1] ? pageCard() : '', first ? '' : forYouCard(), srcCard(), yearAgoCard()].filter(Boolean);
   return `<div class="stack">
-    <section class="greet"><p class="date">${dateLabel(t)}</p><h1>${hello}${name}</h1>
+    <section class="greet"><h1>${hello}${name}</h1>
       ${mem ? `<p class="memory">${esc(mem)}</p>` : ''}
       ${['Full moon','New moon'].includes(moonName()) ? `<p class="moonday">${moonName()} tonight.</p>` : ''}
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
