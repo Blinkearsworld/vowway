@@ -443,6 +443,21 @@ body.flowing .app{visibility:hidden}
 .toast{position:fixed;left:50%;bottom:98px;transform:translateX(-50%);background:var(--ink);color:var(--solid);padding:9px 16px;border-radius:999px;font-size:13.5px;z-index:40;animation:fade .2s;max-width:90%;text-align:center}
 
 @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important} }
+
+/* calmer, lighter: big main words, fewer small ones, more sky, two kinds of buttons */
+.greet{padding:48px 0 14px}
+.greet h1{font-size:36px;letter-spacing:-.015em}
+.lede{font-size:15px}
+.card{background:rgba(14,20,36,.28);backdrop-filter:blur(22px) saturate(1.1);-webkit-backdrop-filter:blur(22px) saturate(1.1);border-color:rgba(255,255,255,.10);padding:22px;gap:14px;border-radius:24px}
+.card h2{font-size:23px}
+.card h3{font-size:19px}
+.card .small{font-size:13.5px}
+.btn{padding:13px 18px;font-size:15px;border-radius:16px}
+.btn.primary,.btn.glow{background:var(--lamp-glow);color:#24190A;border-color:transparent}
+.btn.ghost{background:rgba(255,255,255,.08);border-color:transparent}
+.btn.wide{padding:15px}
+.chip{padding:8px 15px;font-size:14px}
+input[type=text],input[type=search],textarea{font-size:16px}
 </style>
 </head>
 <body>
@@ -596,13 +611,13 @@ const TEASE = {2:'I’ll ask you about one good thing in your day, however small
   4:'Your first evening page: three questions only you can answer.', 5:'A kindness, given or received. Notice one tomorrow.',
   6:'A small promise to yourself. Just three days.', 7:'Your journal will write you a letter about your first week.'};
 const STEPS = [
-  {type:'intent',   t:'Write your first line',          d:'Just one: who do you want to be today? A single word is enough.'},
-  {type:'text',     t:'One thing you’re grateful for',  d:'Big or small. A person, a moment, a cup of tea.', ph:'Today I’m grateful for…'},
-  {type:'silence',  t:'One quiet minute',               d:'Before you write tonight, one minute of quiet. A gentle voice will guide you.'},
-  {type:'reflect',  t:'Your first evening page',        d:'At the end of the day, answer one question. Keep it, or let it go.'},
-  {type:'text',     t:'One kindness',                   d:'Write about one kindness today, one you gave or one you received.', ph:'Today someone…'},
-  {type:'practice', t:'Your first small promise',       d:'Choose one small thing to do for three days. Small enough to keep.'},
-  {type:'review',   t:'Read your first week',           d:'Your journal wrote you a letter about your first seven days.'}
+  {type:'intent',   t:'Write your first line',          d:'Who do you want to be today? One word is enough.'},
+  {type:'text',     t:'One thing you’re grateful for',  d:'Big or small.', ph:'Today I’m grateful for…'},
+  {type:'silence',  t:'One quiet minute',               d:'A gentle voice will guide you.'},
+  {type:'reflect',  t:'Your first evening page',        d:'One question, at the end of the day.'},
+  {type:'text',     t:'One kindness',                   d:'One you gave, or one you received.', ph:'Today someone…'},
+  {type:'practice', t:'Your first small promise',       d:'Something small, for three days.'},
+  {type:'review',   t:'Read your first week',           d:'A letter about your first week.'}
 ];
 const PROMPTS = ['What’s on your mind right now?','What drained you today, and what gave you energy?','What would you tell a friend in your situation?','What went better than expected?','What are you avoiding?','What do you need more of this week?','Describe this moment in three words.','What are you proud of, even a little?'];
 const STATIONS = [
@@ -919,7 +934,7 @@ function backupNudge(){
   const n = activeDays().size;
   if (n < 7 || daysSince(S.lastBackup) < 30 || (S.backupSnooze && S.backupSnooze > TODAY())) return '';
   return `<section class="card quiet"><p class="eyebrow">Keep your path safe</p>
-    <p class="small" style="margin:6px 0 10px">${n} days live only on this phone. Save a copy to iCloud Drive or email it to yourself, so nothing is lost if the phone is.</p>
+    <p class="small" style="margin:6px 0 10px">${n} days live only on this phone. Save a copy to iCloud Drive.</p>
     <div class="row"><button class="btn ghost" data-act="backup" style="flex:1">Save a copy</button><button class="link" data-act="backupLater">Later</button></div></section>`;
 }
 function activeDays(){
@@ -1066,10 +1081,10 @@ function intentUI(){
 function stepCard(j){
   const bar = `<div class="stepno">${STEPS.map((_,i) => `<span class="${S.journey.done[i+1] ? 'on' : ''}"></span>`).join('')}</div>`;
   if (!j.avail) return `<section class="card">${bar}
-      <div class="done-line"><span class="tick">${ICON.check}</span><div><h2>Today’s step is taken</h2><p class="small">Tomorrow: ${esc(j.step.t)}. That’s all for today.</p></div></div>
-      ${S.reminderSet ? '' : '<button class="link" data-act="openReminder">Want a gentle reminder tomorrow? ›</button>'}</section>`;
+      <div class="done-line"><span class="tick">${ICON.check}</span><div><h2>Today’s step is taken</h2><p class="small">Tomorrow: ${esc(j.step.t)}.</p></div></div>
+      ${S.reminderSet ? '' : '<button class="link" data-act="openReminder">Remind me tomorrow ›</button>'}</section>`;
   const s = j.step; let action = '';
-  if (s.type === 'intent') action = intentUI();
+  if (s.type === 'intent') action = `<div class="row"><input type="text" id="intent" maxlength="40" placeholder="Calm, kind, brave…"><button class="btn glow" data-act="saveIntent">Set</button></div>`;
   if (s.type === 'silence') action = `<button class="btn glow wide" data-act="goSilence1">Begin one minute</button>`;
   if (s.type === 'reflect') action = `<button class="btn glow wide" data-act="openRefl">Open the question</button>`;
   if (s.type === 'text') action = `<textarea id="grat" placeholder="${esc(s.ph || 'Write here…')}"></textarea><button class="btn glow wide" data-act="saveGrat">Keep it</button>`;
@@ -1263,7 +1278,7 @@ function viewToday(){
   // one thing at a time: the card that matters most right now leads, everything else waits below
   const night = isNight(), closed = !!today().refl, yc = todayYouCard();
   const evening = night && !closed && !(first && j.avail) ? `<section class="card"><p class="eyebrow">This evening</p><h3>Close your day</h3>
-    <p class="small" style="margin:6px 0 12px">Three short questions, then rest.</p><button class="btn primary wide" data-act="windDown">Begin</button></section>` : '';
+    <p class="small" style="margin:4px 0 12px">Three questions, then rest.</p><button class="btn primary wide" data-act="windDown">Begin</button></section>` : '';
   const primary = first && j.avail ? stepCard(j) : night && closed && yc ? yc : evening || ritual || (first ? stepCard(j) : nowCard()) || yc;
   const main = [primary, ...[first ? stepCard(j) : '', yc, first ? '' : nowCard(), ritual].filter(c => c && c !== primary)].filter(Boolean);
   const notice = seasonCard() || backupNudge();
@@ -1274,7 +1289,7 @@ function viewToday(){
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
     ${main[0] || ''}
     ${notice}
-    <a class="setdown" href="setdown.html"><span class="sd-dot"></span><span><b>Something weighing on you?</b><br><span class="small">Write it, then let the flame take it. Nothing is kept.</span></span><span class="sd-go">›</span></a>
+    <a class="setdown" href="setdown.html"><span class="sd-dot"></span><span><b>Something weighing on you?</b><br><span class="small">Let the flame take it.</span></span><span class="sd-go">›</span></a>
     ${main.length > 1 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(1), ...more].join('')}</div></details>` : ''}
   </div>`;
 }
@@ -1311,7 +1326,7 @@ function viewQuiet(){
   if (quietOpen || sil.running) return viewSilence();
   const wk = S.silence.filter(s => diff(TODAY(), s.date) < 7).reduce((a,s) => a + s.min, 0);
   return `<div class="stack">
-    <section class="greet"><h1>Quiet</h1><p class="lede">Be still for a moment, or listen and read.</p></section>
+    <section class="greet"><h1>Quiet</h1><p class="lede">Be still, listen, or read.</p></section>
     <div class="doors">
       <button class="door" data-act="quietOpen" data-k="silence"><span class="door-ic">${ICON.silence}</span><b>Silence</b><span>1 to 10 minutes</span></button>
       <button class="door" data-act="quietOpen" data-k="sleep"><span class="door-ic">${ICON.moon}</span><b>Sleep</b><span>Sound and a soft voice</span></button>
@@ -1328,10 +1343,10 @@ function viewSilence(){
   return `<div class="stack">
     ${sil.custom || sil.running ? '' : '<button class="link" data-act="quietBack" style="align-self:flex-start">‹ Quiet</button>'}
     ${sil.custom ? `<section class="greet"><p class="date">${esc(sil.custom.by)}</p><h1>${esc(sil.custom.t)}</h1><p class="lede">${sil.custom.type === 'listen' ? 'Press Begin, and let the voice guide you.' : 'Press Begin, and let the sound carry you.'}</p></section>` :
-    `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go. A gentle voice and a soft sound will stay with you as you drift off.' : 'Stop for a moment. There’s nothing you need to do here.'}</p></section>`}
+    `<section class="greet"><h1>${sleep ? 'Sleep' : 'Silence'}</h1><p class="lede">${sleep ? 'Let the day go.' : 'Nothing to do here.'}</p></section>`}
     <div class="breath-wrap"><div class="breath ${sil.running && !sleep ? 'on' : ''}"></div>
       <div class="breath-center"><div class="breath-label" id="bl">${sil.running ? 'Breathe in' : sleep ? 'Rest' : 'Ready when you are'}</div><div class="time" id="tl">${mmss(sil.left)}</div></div></div>
-    ${sleep ? '<p class="small" style="text-align:center">20 minutes. It keeps playing when your screen locks, then fades out by itself.</p>' : ''}
+    ${sleep ? '<p class="small" style="text-align:center">Fades out by itself in 20 minutes.</p>' : ''}
     <div ${sleep ? 'hidden' : ''}><p class="opt-label">How long</p><div class="chips">${durs.map(m => `<button class="chip" data-act="dur" data-m="${m}" aria-pressed="${sil.total === m*60}" ${sil.running ? 'disabled' : ''}>${m} min</button>`).join('')}</div></div>
     <div><p class="opt-label">Sound</p><div class="chips">${sounds.map(([k,l]) => `<button class="chip" data-act="sound" data-k="${k}" aria-pressed="${sil.sound===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>
     <label class="toggle" for="voice"><input type="checkbox" id="voice" ${sil.voice ? 'checked' : ''} ${sil.running ? 'disabled' : ''}> Guided by a gentle voice</label>
@@ -1419,11 +1434,11 @@ function viewPath(){
       return `<div class="stone ${cls}"><span class="mk">${d ? ICON.check : n}</span><div><h3>${esc(st.t)}</h3>${cls === 'now' ? `<p class="small">${esc(st.d)}</p>` : ''}</div></div>`; }).join('')}</div>
     <p class="small">After these seven steps, each week brings a new theme for your evening questions.</p></section></details>`;
   return `<div class="stack">
-    <section class="greet"><h1>Your path</h1><p class="lede">A stone for every day, and small promises you keep.</p></section>
+    <section class="greet"><h1>Your path</h1><p class="lede">A stone for every day.</p></section>
     ${lampCard()}
     ${j.phase === 'first' ? firstSteps : ''}
     <div class="section-h" style="margin-top:6px"><h2>Your vows</h2>${active.length ? '<button class="link" data-act="newVow">+ New vow</button>' : ''}</div>
-    ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A vow is a small promise to yourself: something to do, or something to give up. Start small.</p>
+    ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A small promise to yourself.</p>
       <button class="btn glow wide" data-act="newVow" style="margin-top:6px">+ New vow</button></section>`}
     ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}
   </div>`;
