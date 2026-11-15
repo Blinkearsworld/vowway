@@ -172,10 +172,10 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.85}
 .tick svg{width:15px;height:15px}
 .intent-word{font-family:var(--display);font-size:28px;color:var(--lamp);font-style:italic}
 .greet .memory{font-family:var(--display);font-style:italic;font-size:17px;line-height:1.4;margin:6px 0 10px;opacity:.92}
-a.setdown{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(242,179,90,.10),rgba(242,179,90,0) 70%)}
-a.setdown b{font-weight:600;font-size:15px}
-a.setdown .small{font-size:13px;color:var(--muted)}
-a.setdown .sd-go{margin-left:auto;font-size:22px;color:var(--muted)}
+.setdown{font:inherit;text-align:left;width:100%;cursor:pointer;display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(242,179,90,.10),rgba(242,179,90,0) 70%)}
+.setdown b{font-weight:600;font-size:15px}
+.setdown .small{font-size:14.5px;color:var(--muted)}
+.setdown .sd-go{margin-left:auto;font-size:22px;color:var(--muted)}
 .sd-dot{flex:none;width:10px;height:14px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 50% 70%,#fff6dc,#F2B35A 55%,rgba(242,120,40,.2));box-shadow:0 0 14px rgba(242,179,90,.7);animation:sdf 2.4s ease-in-out infinite}
 @keyframes sdf{50%{transform:scale(.88) translateY(1px);opacity:.85}}
 details.more-today summary{cursor:pointer;list-style:none;text-align:center;font-size:14px;color:var(--muted);padding:10px;border:1px dashed var(--line);border-radius:16px}
@@ -1355,11 +1355,11 @@ function waveLine(){
   const now = rows.find(r => r.c.h === 21), soon = rows.find(r => r.c.h === 20);
   return now ? `The wave is passing through ${now.n} right now.` : soon ? `It reaches ${soon.n} within the hour.` : 'The wave is always somewhere on the earth.';
 }
-function lampsForCard(){
+function sheetLamp(){ return sheetWrap(`<div class="stack"><h2 id="lp-t">Send a little light</h2>${lampsForCard(true)}</div>`, 'lp-t'); }
+function lampsForCard(inSheet){
   const t = TODAY(), mine = S.lamps.filter(l => l.date === t);
-  return `<section class="card" id="lampcard"><p class="eyebrow">A light for someone</p>
-    <h3>Send a little light</h3>
-    <p class="small">Think of someone and wish them well. A lamp is a quiet way of saying: I’m with you. Their name stays on this device.</p>
+  return `<section class="${inSheet ? 'stack' : 'card'}" id="lampcard">${inSheet ? '' : '<p class="eyebrow">A light for someone</p><h3>Send a little light</h3>'}
+    <p class="small">Think of someone and wish them well. A quiet way of saying: I’m with you. Their name stays on this phone.</p>
     ${mine.length ? `<div class="lit">${mine.map(l => `<span>${esc(l.for)}</span>`).join('')}</div>` : ''}
     <div class="row"><input type="text" id="lampfor" maxlength="40" placeholder="A name, or just a thought"><button class="btn primary" data-act="lightLamp">Light</button></div>
   </section>`;
@@ -1376,6 +1376,7 @@ function viewQuiet(){
       <button class="door" data-act="quietOpen" data-k="sleep"><span class="door-ic">${ICON.moon}</span><b>Sleep</b><span>Sound and a soft voice</span></button>
     </div>
     ${wk ? `<p class="small" style="text-align:center;margin-top:-4px">${plural(wk,'minute')} of silence this week</p>` : ''}
+    <button class="setdown" data-act="openLamp"><span class="sd-dot"></span><span><b>Send a little light</b><br><span class="small">Think of someone and wish them well.</span></span><span class="sd-go">›</span></button>
     ${viewLibrary(true)}
   </div>`;
 }
@@ -1397,8 +1398,10 @@ function viewSilence(){
     <button class="btn ${sil.running ? 'ghost' : 'glow'} wide" data-act="silToggle">${sil.running ? 'End' : 'Begin'}</button>
     <p class="small" style="text-align:center">${wk ? `${plural(wk,'minute')} of silence this week. ` : ''}The guiding voice is AI-generated, made with an open model.</p>
     ${sleep ? '' : `
-    <div class="section-h"><h2>Together</h2><span class="small">one earth, one sky</span></div>
-    ${lampsForCard()}`}
+    <section class="card"><h3>Shared silence</h3>
+      <p class="small">Different skies, the same quiet.</p>
+      <div class="globe" id="globe" aria-hidden="true"><canvas id="globecv"></canvas></div>
+    </section>`}
   </div>`;
 }
 
@@ -1998,7 +2001,7 @@ function render(){
   renderSheet(); fadeOrb();
   if (!document.querySelector('.topfade')) { const t = document.createElement('div'); t.className = 'topfade'; document.body.appendChild(t); }
 }
-function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder, season:sheetSeason, jday:sheetJDay}[sheet] || (() => ''))()
+function renderSheet(){ layer.innerHTML = ({refl:sheetRefl, settings:sheetSettings, letter:sheetLetter, word:sheetWord, reader:sheetReader, player:sheetPlayer, newvow:sheetNewVow, note:sheetNote, reminder:sheetReminder, season:sheetSeason, jday:sheetJDay, lamp:sheetLamp}[sheet] || (() => ''))()
   + (sil.running && sil.mode === 'sleep' ? `<div class="sleep-screen"><div class="t" id="tl2">${mmss(sil.left)}</div><p>Rest now. You can lock your phone; the sound will fade by itself.</p><button data-act="silToggle">End</button></div>` : ''); }
 function sheetPlayer(){
   const it = sil.custom; if (!it) return '';
@@ -2288,7 +2291,7 @@ document.addEventListener('click', e => {
     case 'livedFlow': saveLived(b.dataset.a); flowNext(); break;
     case 'nextQuote': S.qoff++; save(); render(); break;
     case 'lightLamp': { const el = document.getElementById('lampfor'), v = (el.value || '').trim(); if (!v) { el.focus(); return; }
-      S.lamps.push({date:t, for:v}); save(); render(); toast('Your lamp is lit'); break; }
+      S.lamps.push({date:t, for:v}); save(); if (sheet === 'lamp') { sheet = null; } render(); toast('Your light is sent'); break; }
     case 'saveGrat': { const el = document.getElementById('grat'), v = el.value.trim(); if (!v) { el.focus(); return; }
       S.reflections.push({id:Date.now(), date:t, grat:true, q:[journey().step.t], a:[v]}); save(); stepHook('text'); render(); break; }
     case 'deed': if (!S.deeds.includes(t)) S.deeds.push(t); save(); stepHook('confirm'); render(); break;
@@ -2314,6 +2317,7 @@ document.addEventListener('click', e => {
     case 'dur': sil.total = sil.left = +b.dataset.m * 60; render(); break;
     case 'sound': sil.sound = b.dataset.k; render(); break;
     case 'silToggle': { const v = document.getElementById('voice'); if (v && !sil.running) sil.voice = v.checked; sil.running ? silStop(false) : silStart(); break; }
+    case 'openLamp': sheet = 'lamp'; renderSheet(); setTimeout(() => { const i = document.getElementById('lampfor'); i && i.focus(); }, 300); break;
     case 'libMore': libAll.add(b.dataset.k); render(); break;
     case 'jOpenDay': jDay = b.dataset.k; sheet = 'jday'; renderSheet(); break;
     case 'jPrev': case 'jNext': { const d = new Date(jMonth.y, jMonth.m + (a === 'jPrev' ? -1 : 1), 1); jMonth = {y:d.getFullYear(), m:d.getMonth()}; render(); break; }
