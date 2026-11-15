@@ -820,7 +820,7 @@ let tab = 'today', sheet = null, selMood = null, pendingDelete = null, customDay
 const ob = {i:0, need:null, reasons:[], time:null, name:''};
 
 const PHASES = ['dawn','day','dusk','night'];
-const curPhase = () => PHASES.includes(S.modePref) ? S.modePref : phase(HOUR());
+const curPhase = () => PHASES.includes(S.modePref) && (S.modeDay === TODAY() || S.modeDay === 'always') ? S.modePref : phase(HOUR());
 const isNight = () => { const p = curPhase(); return p === 'dusk' || p === 'night'; };
 
 /* ---------- living landscape: drawn in code, follows the time of day ---------- */
@@ -917,7 +917,7 @@ function placeMoon(){
 addEventListener('resize', placeMoon);
 function drawScene(){ if (!S.sceneV3) { if (!S.scene || S.scene === 'meadow') S.scene = 'lake'; S.sceneV3 = 1; } const ph = curPhase(), photo = (S.scene || 'lake') === 'lake', k = (S.scene || 'lake') + ph + (ph === 'night' ? TODAY() : ''); if (k === sceneKey) return; sceneKey = k;
   const el = document.getElementById('scene'); el.dataset.ph = ph; if (photo) el.dataset.photo = '1'; else delete el.dataset.photo;
-  el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
+  el.innerHTML = photo ? `<div class="photo" style="background-image:url(bg-${ph === 'dusk' ? 'dawn' : ph}.jpg)"></div>${ph === 'night' ? moonHTML() : ''}` : sceneSVG(S.scene || 'lake', ph);
   if (!el.querySelector('.moon')) { const h = document.getElementById('moonhit'); if (h) h.style.display = 'none'; }
   placeMoon(); }
 /* seasons many people keep; a person who chose one tradition sees only that tradition's season (and the new year) */
@@ -1762,7 +1762,7 @@ function sheetSettings(){
       <div><p class="opt-label">Your name</p><div class="row"><input type="text" id="setname" maxlength="30" placeholder="Your first name" value="${esc((S.profile && S.profile.name) || '')}"><button class="btn ghost" data-act="saveName">Save</button></div></div>
       <div><p class="opt-label">Your place</p><div class="pals">${SCENES.map(([k,l]) => `<button data-act="setScene" data-k="${k}" aria-pressed="${S.scene===k}"><i>${sceneSVG(k, curPhase(), 'p' + k)}</i>${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">Your direction. Daily thoughts, small steps and your home screen lean this way.</p><div class="seg" style="grid-template-columns:repeat(4,1fr)">${NEEDS.map(n => `<button data-act="setNeed" data-k="${n.id}" aria-pressed="${need()===n.id}">${n.short}</button>`).join('')}</div></div>
-      <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(5,1fr)">${[['auto','Live'],['dawn','Dawn'],['day','Day'],['dusk','Dusk'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${S.modePref===k}">${l}</button>`).join('')}</div></div>
+      <div><p class="opt-label">Light. “Live” follows the sun where you are.</p><div class="seg" style="grid-template-columns:repeat(3,1fr)">${[['auto','Live'],['day','Day'],['night','Night']].map(([k,l]) => `<button data-act="setMode" data-k="${k}" aria-pressed="${(S.modePref === k && (k === 'auto' || S.modeDay === 'always')) || (k === 'auto' && S.modeDay !== 'always')}">${l}</button>`).join('')}</div></div>
       <div><p class="opt-label">What gives you strength? Optional. Your daily word, and words on hard days, will come from it.</p>
         <div class="trad">${Object.entries(SRC).map(([k,l]) => `<button data-act="setSrc" data-k="${k}" aria-pressed="${S.src===k}"><span>${l}</span>${S.src===k ? '<span style="color:var(--lamp)">✓</span>' : ''}</button>`).join('')}</div></div>
       <div><p class="opt-label">Daily reminder</p>${reminderBlock()}</div>
@@ -2252,7 +2252,9 @@ document.addEventListener('click', e => {
         cta:'Close your day', sub:'Three short questions, then rest.', i:0, data:{mood:null, a:['','','']}}; renderFlow(); }
       else openFlow(false);
       break; }
-    case 'toggleMode': { const order = ['auto','dawn','day','dusk','night']; S.modePref = order[(order.indexOf(S.modePref) + 1) % order.length]; save(); render(); toast(S.modePref === 'auto' ? 'Live: following your sun' : 'Light: ' + S.modePref); break; }
+    case 'toggleMode': { // one tap: day or night; back to the real sky when that matches, and again tomorrow
+      const real = phase(HOUR()), want = curPhase() === 'night' ? 'day' : 'night';
+      S.modePref = (want === 'night' ? real === 'night' : real !== 'night') ? 'auto' : want; S.modeDay = TODAY(); save(); render(); break; }
     case 'openWord': sheet = 'word'; renderSheet(); break;
     case 'chip': { const i = document.getElementById('intent'); if (i) i.value = b.dataset.w;
       document.querySelectorAll('[data-act="chip"]').forEach(c => c.setAttribute('aria-pressed', c === b)); break; }
@@ -2319,7 +2321,7 @@ document.addEventListener('click', e => {
       render(); break; }
     case 'setSrc': S.src = b.dataset.k; S.qoff = 0; S.srcAsked = 1; save(); render(); if (b.closest('.srccard')) toast('Your daily word will come from there'); break;
     case 'srcLater': S.srcAsked = 1; save(); render(); break;
-    case 'setMode': S.modePref = b.dataset.k; save(); render(); break;
+    case 'setMode': S.modePref = b.dataset.k; S.modeDay = 'always'; save(); render(); break;
     case 'saveName': { const v = (document.getElementById('setname').value || '').trim(); if (S.profile) { S.profile.name = v; save(); render(); toast(v ? `Hello, ${v}` : 'Name removed'); } break; }
     case 'setNeed': S.profile.need = b.dataset.k; libType = null; save(); render(); break;
     case 'setScene': S.scene = b.dataset.k; save(); render(); break;
