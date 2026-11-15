@@ -430,6 +430,9 @@ body.flowing .app{visibility:hidden}
 .scrim{position:fixed;inset:0;background:rgba(10,12,20,.4);z-index:30;animation:fade .25s}
 .sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;max-height:92%;overflow-y:auto;background:var(--solid);border-radius:26px 26px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom));z-index:31;animation:up .3s ease-out}
 .grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 14px}
+.sheet-top{position:sticky;top:-10px;z-index:2;margin:-10px -20px 0;padding:10px 20px 0;background:linear-gradient(var(--solid) 70%,transparent);height:34px}
+.sheet-x{position:absolute;right:12px;top:8px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.10);color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+.sheet-x::after{content:"";position:absolute;inset:-6px}
 .sheet .stack{gap:16px}
 .body{transition:opacity 1.4s, filter 1.4s, transform 1.4s}
 .body.burning{opacity:0;filter:blur(8px);transform:translateY(-24px) scale(.97)}
@@ -1731,7 +1734,7 @@ function header(){
 }
 
 /* sheets */
-function sheetWrap(inner, id){ return `<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="${id}"><div class="grab"></div>${inner}</div>`; }
+function sheetWrap(inner, id){ return `<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="${id}"><div class="sheet-top"><div class="grab"></div><button class="sheet-x" data-act="closeSheet" aria-label="Close">×</button></div>${inner}</div>`; }
 function sheetRefl(){
   const qs = reflQuestions(), j = journey(), firstTime = j.phase === 'first' && j.step.type === 'reflect';
   return sheetWrap(`<div class="body stack" id="sbody">
@@ -2339,6 +2342,12 @@ document.addEventListener('change', e => {
     if (!confirm('Replace everything on this phone with this backup?')) return;
     localStorage.setItem(KEY, txt); location.reload(); });
 });
+(() => { let y0 = null, sh = null;
+  document.addEventListener('touchstart', e => { sh = e.target.closest && e.target.closest('.sheet'); y0 = sh && sh.scrollTop <= 0 ? e.touches[0].clientY : null; }, {passive:true});
+  document.addEventListener('touchmove', e => { if (y0 === null || !sh) return; const d = e.touches[0].clientY - y0; if (d > 0 && sh.scrollTop <= 0) sh.style.transform = `translateX(-50%) translateY(${d * .6}px)`; }, {passive:true});
+  document.addEventListener('touchend', e => { if (y0 === null || !sh) return; const d = (e.changedTouches[0] || {}).clientY - y0; sh.style.transform = '';
+    if (d > 110 && sh.scrollTop <= 0) { const x = sh.querySelector('[data-act=closeSheet]'); x && x.click(); } y0 = null; sh = null; }, {passive:true});
+})();
 document.addEventListener('input', e => { if (e.target.id === 'remtime' && e.target.value) { S.reminderTime = e.target.value; save(); const g = document.getElementById('gcal'); if (g) g.href = googleCalUrl(e.target.value); } if (e.target.id === 'ctitle' || e.target.id === 'setitle') vf.title = e.target.value; if (e.target.id === 'vfnum') vf.num = e.target.value; if (e.target.id === 'vfdate') { vf.date = e.target.value; render(); } if (e.target.id === 'jsearch') { jq = e.target.value; const l = document.getElementById('jlist'); if (l) { l.hidden = !jq; l.innerHTML = jq ? journalList() : ''; } } });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && flow) { closeFlow(); return; }
