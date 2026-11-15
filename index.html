@@ -909,7 +909,7 @@ function placeMoon(){
   // the first time the app opens tonight, the moon says its name, then is quiet
   try { const kk = 'vowway_moonname'; if (localStorage.getItem(kk) !== TODAY()) { localStorage.setItem(kk, TODAY()); setTimeout(showMoonName, 900); } } catch(e){}
   const W = innerWidth, H = innerHeight, sc = Math.max(W / BG.w, H / BG.h), ox = (W - BG.w * sc) / 2, oy = (H - BG.h * sc) / 2;
-  const hd = document.querySelector('.top'), hb = hd ? hd.getBoundingClientRect().bottom + window.scrollY : H * .1;
+  const hb = (parseFloat(getComputedStyle(document.getElementById('app')).paddingTop) || 0) + 60;   // bottom of the header, even while a screen covers it
   const size = BG.moon.r * sc * 6, x = W * .8, y = hb + BG.moon.r * sc + 14;   // just below the buttons, whatever the phone's top inset
   Object.assign(m.style, {width:size + 'px', height:size + 'px', left:(x - size / 2) + 'px', top:(y - size / 2) + 'px'});
   const lb = document.querySelector('#scene .moonlbl'); if (lb) Object.assign(lb.style, {left:(x - 80) + 'px', top:(y + BG.moon.r * sc + 8) + 'px'});
