@@ -417,6 +417,11 @@ body.flowing .app{visibility:hidden}
 .nav button{position:relative}
 .doors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .door{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px 16px;border-radius:22px;border:1px solid var(--line);background:color-mix(in srgb,var(--solid) 55%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--ink);font:inherit;cursor:pointer}
+.door{text-decoration:none}
+.small-doors .door{padding:16px 15px;gap:6px}
+.small-doors .door b{font-size:19px}
+.small-doors .sd-dot{margin-bottom:4px}
+.lamp-dot{width:12px;height:12px;border-radius:50%;margin:1px 0 5px;background:radial-gradient(circle,#fff8e6 0,#F2B35A 45%,rgba(242,179,90,0) 72%);box-shadow:0 0 14px 3px rgba(242,179,90,.45);animation:sdf 3s ease-in-out infinite}
 .door b{font-family:var(--display);font-weight:500;font-size:21px}
 .door span{font-size:13px;color:var(--muted)}
 .door .door-ic svg{width:26px;height:26px;color:var(--lamp-glow)}
@@ -1333,7 +1338,10 @@ function viewToday(){
       <button class="pill" data-act="${unlocked('path') ? 'goPath' : 'noop'}">${lampSVG(L.bright, 'pill', L.total)}${L.total ? plural(L.total, 'day') + ' on the path' : 'Your path starts today'}</button></section>
     ${main[0] || ''}
     ${notice}
-    <a class="setdown" href="setdown.html"><span class="sd-dot"></span><span><b>Something weighing on you?</b><br><span class="small">Let the flame take it.</span></span><span class="sd-go">›</span></a>
+    <div class="doors small-doors">
+      <a class="door" href="setdown.html"><span class="sd-dot"></span><b>Set it down</b><span>Something weighing on you?</span></a>
+      <button class="door" data-act="openLamp"><span class="lamp-dot"></span><b>Send a light</b><span>Wish someone well</span></button>
+    </div>
     ${main.length > 1 || more.length ? `<details class="more-today" ${moreOpen ? 'open' : ''}><summary>More for today</summary><div class="stack" style="margin-top:12px">${[...main.slice(1), ...more].join('')}</div></details>` : ''}
   </div>`;
 }
@@ -1355,7 +1363,7 @@ function waveLine(){
   const now = rows.find(r => r.c.h === 21), soon = rows.find(r => r.c.h === 20);
   return now ? `The wave is passing through ${now.n} right now.` : soon ? `It reaches ${soon.n} within the hour.` : 'The wave is always somewhere on the earth.';
 }
-function sheetLamp(){ return sheetWrap(`<div class="stack"><h2 id="lp-t">Send a little light</h2>${lampsForCard(true)}</div>`, 'lp-t'); }
+function sheetLamp(){ return sheetWrap(`<div class="stack"><h2 id="lp-t">Send a light</h2>${lampsForCard(true)}</div>`, 'lp-t'); }
 function lampsForCard(inSheet){
   const t = TODAY(), mine = S.lamps.filter(l => l.date === t);
   return `<section class="${inSheet ? 'stack' : 'card'}" id="lampcard">${inSheet ? '' : '<p class="eyebrow">A light for someone</p><h3>Send a little light</h3>'}
@@ -1376,7 +1384,6 @@ function viewQuiet(){
       <button class="door" data-act="quietOpen" data-k="sleep"><span class="door-ic">${ICON.moon}</span><b>Sleep</b><span>Sound and a soft voice</span></button>
     </div>
     ${wk ? `<p class="small" style="text-align:center;margin-top:-4px">${plural(wk,'minute')} of silence this week</p>` : ''}
-    <button class="setdown" data-act="openLamp"><span class="sd-dot"></span><span><b>Send a little light</b><br><span class="small">Think of someone and wish them well.</span></span><span class="sd-go">›</span></button>
     ${viewLibrary(true)}
   </div>`;
 }
