@@ -922,6 +922,33 @@ function moonAge(d = new Date()){
   const e = ((Lm - Ls) % 360 + 360) % 360; return e / 360;
 }
 const SOUTH = (() => { try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Apia|Noumea|Efate)|^America\/(Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas|Bahia|Recife|Fortaleza|Belem)|^Africa\/(Johannesburg|Maputo|Harare|Lusaka|Windhoek|Gaborone|Maseru|Mbabane|Lubumbashi|Blantyre|Luanda)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch(e){ return false; } })();
+/* where the person is, roughly, from the phone's time zone only (no location is asked for) */
+function whereAbout(){
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch(e){}
+  const lon = -new Date().getTimezoneOffset() / 60 * 15;
+  const known = {'America/Los_Angeles':34,'America/Denver':40,'America/Chicago':42,'America/New_York':41,'America/Toronto':44,'America/Vancouver':49,'America/Mexico_City':19,
+    'America/Bogota':5,'America/Lima':-12,'America/Caracas':10,'America/Guayaquil':-2,'America/Santiago':-33,'America/Sao_Paulo':-23,'America/Argentina/Buenos_Aires':-35,
+    'Europe/London':51,'Europe/Paris':49,'Europe/Berlin':52,'Europe/Madrid':40,'Europe/Rome':42,'Europe/Moscow':56,'Europe/Istanbul':41,'Asia/Tbilisi':42,'Asia/Yerevan':40,'Asia/Baku':40,
+    'Asia/Dubai':25,'Asia/Riyadh':25,'Asia/Tehran':36,'Asia/Karachi':25,'Asia/Kolkata':22,'Asia/Calcutta':22,'Asia/Colombo':7,'Asia/Dhaka':24,'Asia/Bangkok':14,'Asia/Singapore':1,
+    'Asia/Kuala_Lumpur':3,'Asia/Jakarta':-6,'Asia/Manila':15,'Asia/Shanghai':31,'Asia/Hong_Kong':22,'Asia/Tokyo':36,'Asia/Seoul':37,'Africa/Cairo':30,'Africa/Lagos':6,
+    'Africa/Nairobi':-1,'Africa/Accra':6,'Africa/Johannesburg':-26,'Australia/Sydney':-34,'Australia/Melbourne':-38,'Australia/Perth':-32,'Australia/Brisbane':-27,'Pacific/Auckland':-37,'Pacific/Honolulu':21};
+  let lat = known[tz];
+  if (lat === undefined) lat = SOUTH ? -30 : /^Africa\//.test(tz) ? 8 : /^Europe\//.test(tz) ? 48 : /^Asia\//.test(tz) ? 28 : /^America\//.test(tz) ? 35 : 35;
+  return {lat, lon};
+}
+/* which way the lit side of the moon points in the sky, seen from where you are, in degrees clockwise from straight up */
+function moonTilt(d = new Date()){
+  const R = Math.PI / 180, n = (d - Date.UTC(2000, 0, 1, 12)) / 864e5, eps = 23.439 * R, {lat, lon} = whereAbout();
+  const M = (357.5291 + 0.98560028 * n) * R, Ls = (280.459 + 0.98564736 * n + 1.915 * Math.sin(M) + 0.020 * Math.sin(2 * M)) * R;
+  const Mm = (134.963 + 13.064993 * n) * R, D = (297.850 + 12.190749 * n) * R, F = (93.272 + 13.229350 * n) * R;
+  const Lm = (218.316 + 13.176396 * n + 6.289 * Math.sin(Mm) + 1.274 * Math.sin(2 * D - Mm) + 0.658 * Math.sin(2 * D)) * R, Bm = 5.128 * Math.sin(F) * R;
+  const eq = (l, b) => { const ra = Math.atan2(Math.sin(l) * Math.cos(eps) - Math.tan(b) * Math.sin(eps), Math.cos(l)); const dec = Math.asin(Math.sin(b) * Math.cos(eps) + Math.cos(b) * Math.sin(eps) * Math.sin(l)); return [ra, dec]; };
+  const [as, ds] = eq(Ls, 0), [am, dm] = eq(Lm, Bm);
+  const chi = Math.atan2(Math.cos(ds) * Math.sin(as - am), Math.sin(ds) * Math.cos(dm) - Math.cos(ds) * Math.sin(dm) * Math.cos(as - am));   // bright limb, from celestial north toward east
+  const lst = (280.46061837 + 360.98564736629 * n + lon) * R, H = lst - am, phi = lat * R;
+  const q = Math.atan2(Math.sin(H), Math.tan(phi) * Math.cos(dm) - Math.sin(dm) * Math.cos(H));                                          // parallactic angle
+  return -((chi - q) / R);    // east is to the left when you face the moon, so counterclockwise in the sky is clockwise negative on screen
+}
 function moonName(p = moonAge()){
   return p < .034 || p > .966 ? 'New moon' : p < .216 ? 'Waxing crescent' : p < .284 ? 'First quarter' : p < .466 ? 'Waxing gibbous'
     : p < .534 ? 'Full moon' : p < .716 ? 'Waning gibbous' : p < .784 ? 'Last quarter' : 'Waning crescent';
@@ -929,14 +956,14 @@ function moonName(p = moonAge()){
 function moonHTML(){
   const p = moonAge(), k = Math.cos(2 * Math.PI * p), lit = (1 - k) / 2;
   if (lit < .025) return '';                      // new moon: only the stars tonight
-  const r = 50, rx = r * Math.abs(k), flip = (p >= .5) !== SOUTH;
+  const r = 50, rx = r * Math.abs(k), turn = (moonTilt() - 90).toFixed(1);   // the lit side faces the sun, as it does in your sky
   const path = `M0,${-r} A${r},${r} 0 0 1 0,${r} A${rx},${r} 0 0 ${k > 0 ? 0 : 1} 0,${-r} Z`;
   return `<div class="orb moon" data-lit="${lit.toFixed(2)}"><svg viewBox="-150 -150 300 300" aria-hidden="true">
     <defs><radialGradient id="mglow"><stop offset="0" stop-color="#F6EEDA" stop-opacity="${(.18 + .32 * lit).toFixed(2)}"/><stop offset="1" stop-color="#F6EEDA" stop-opacity="0"/></radialGradient>
     <radialGradient id="mface" cx=".42" cy=".4"><stop offset="0" stop-color="#FFFBF0"/><stop offset="1" stop-color="#E9DFC6"/></radialGradient></defs>
     <circle r="${(110 + 40 * lit).toFixed(0)}" fill="url(#mglow)"/>
     <circle r="${r}" fill="rgba(200,210,240,.07)"/>
-    <path d="${path}" fill="url(#mface)" transform="${flip ? 'scale(-1,1)' : ''}"/></svg></div>
+    <path d="${path}" fill="url(#mface)" transform="rotate(${turn})"/></svg></div>
     <div class="moonref" style="opacity:${(.25 + .6 * lit).toFixed(2)}"></div><div class="moonlbl">${moonName(p)}</div>`;
 }
 let moonT = null, moonNamed = false;
