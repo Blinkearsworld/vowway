@@ -937,7 +937,7 @@ function whereAbout(){
   return {lat, lon};
 }
 /* which way the lit side of the moon points in the sky, seen from where you are, in degrees clockwise from straight up */
-function moonTilt(d = new Date()){
+function moonTiltAt(d){
   const R = Math.PI / 180, n = (d - Date.UTC(2000, 0, 1, 12)) / 864e5, eps = 23.439 * R, {lat, lon} = whereAbout();
   const M = (357.5291 + 0.98560028 * n) * R, Ls = (280.459 + 0.98564736 * n + 1.915 * Math.sin(M) + 0.020 * Math.sin(2 * M)) * R;
   const Mm = (134.963 + 13.064993 * n) * R, D = (297.850 + 12.190749 * n) * R, F = (93.272 + 13.229350 * n) * R;
@@ -947,7 +947,14 @@ function moonTilt(d = new Date()){
   const chi = Math.atan2(Math.cos(ds) * Math.sin(as - am), Math.sin(ds) * Math.cos(dm) - Math.cos(ds) * Math.sin(dm) * Math.cos(as - am));   // bright limb, from celestial north toward east
   const lst = (280.46061837 + 360.98564736629 * n + lon) * R, H = lst - am, phi = lat * R;
   const q = Math.atan2(Math.sin(H), Math.tan(phi) * Math.cos(dm) - Math.sin(dm) * Math.cos(H));                                          // parallactic angle
-  return -((chi - q) / R);    // east is to the left when you face the moon, so counterclockwise in the sky is clockwise negative on screen
+  const alt = Math.asin(Math.sin(phi) * Math.sin(dm) + Math.cos(phi) * Math.cos(dm) * Math.cos(H)) / R;
+  return {tilt: -((chi - q) / R), alt};    // east is to the left when you face the moon, so counterclockwise in the sky is clockwise negative on screen
+}
+/* when the moon is below your horizon, show it as it looked (or will look) the nearest time it stood in your sky */
+function moonTilt(d = new Date()){
+  const now = moonTiltAt(d); if (now.alt > 8) return now.tilt;
+  for (let h = .5; h <= 14; h += .5) for (const sgn of [-1, 1]) { const t = moonTiltAt(new Date(+d + sgn * h * 36e5)); if (t.alt > 20) return t.tilt; }
+  return now.tilt;
 }
 function moonName(p = moonAge()){
   return p < .034 || p > .966 ? 'New moon' : p < .216 ? 'Waxing crescent' : p < .284 ? 'First quarter' : p < .466 ? 'Waxing gibbous'
