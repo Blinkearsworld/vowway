@@ -912,7 +912,15 @@ function sceneSVG(kind, ph, id='s'){
 let sceneKey = '';
 /* the real moon: today's phase, drawn over the night lake */
 const BG = {w:972, h:1619, moon:{x:830, y:324, r:34}, ref:{x:849, y:1272}};
-function moonAge(d = new Date()){ const p = ((d - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588853) % 1; return p < 0 ? p + 1 : p; }
+/* the moon's real place: its angle from the sun, with the main corrections of its orbit (accurate to a few hours) */
+function moonAge(d = new Date()){
+  const R = Math.PI / 180, n = (d - Date.UTC(2000, 0, 1, 12)) / 864e5;
+  const M = (357.5291 + 0.98560028 * n) * R, Ls = 280.459 + 0.98564736 * n + 1.915 * Math.sin(M) + 0.020 * Math.sin(2 * M);
+  const Mm = (134.963 + 13.064993 * n) * R, D = (297.850 + 12.190749 * n) * R, F = (93.272 + 13.229350 * n) * R;
+  const Lm = 218.316 + 13.176396 * n + 6.289 * Math.sin(Mm) + 1.274 * Math.sin(2 * D - Mm) + 0.658 * Math.sin(2 * D)
+    + 0.214 * Math.sin(2 * Mm) - 0.186 * Math.sin(M) - 0.114 * Math.sin(2 * F);
+  const e = ((Lm - Ls) % 360 + 360) % 360; return e / 360;
+}
 const SOUTH = (() => { try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Apia|Noumea|Efate)|^America\/(Argentina|Santiago|Sao_Paulo|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas|Bahia|Recife|Fortaleza|Belem)|^Africa\/(Johannesburg|Maputo|Harare|Lusaka|Windhoek|Gaborone|Maseru|Mbabane|Lubumbashi|Blantyre|Luanda)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch(e){ return false; } })();
 function moonName(p = moonAge()){
   return p < .034 || p > .966 ? 'New moon' : p < .216 ? 'Waxing crescent' : p < .284 ? 'First quarter' : p < .466 ? 'Waxing gibbous'
