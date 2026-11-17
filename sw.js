@@ -1,4 +1,4 @@
-const CACHE = 'vowway-v46';
+const CACHE = 'vowway-v47';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon-180.png?v=5', 'icon-192.png?v=5', 'icon-512.png?v=5', 'setdown.html', 'room.jpg', 'caveat.woff2', 'bg-dawn.jpg', 'bg-day.jpg', 'bg-night.jpg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
@@ -9,8 +9,12 @@ self.addEventListener('fetch', e => {
   if (isPage) {
     // the app itself: always try the network first, so updates arrive; fall back to the saved copy offline
     // cache:'no-cache' asks GitHub every time instead of reusing the browser's 10-minute copy
-    e.respondWith(fetch(e.request.url, {cache:'no-cache', credentials:'same-origin'}).then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return res; })
-      .catch(() => caches.match(e.request).then(hit => hit || caches.match('index.html'))));
+    // on a slow connection, don't make the person wait: after 2.5 seconds use the saved copy (the fresh one is still saved for next time)
+    const net = fetch(e.request.url, {cache:'no-cache', credentials:'same-origin'}).then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return res; });
+    const saved = () => caches.match(e.request, {ignoreSearch:true}).then(hit => hit || caches.match('index.html'));
+    const slow = new Promise(r => setTimeout(r, 2500)).then(saved).then(hit => hit || net);
+    e.respondWith(Promise.race([net.catch(saved), slow]).then(r => r || saved()));
+    e.waitUntil(net.catch(() => {}));
     return;
   }
   // sounds, voices, icons, fonts: cache first (they never change once published)

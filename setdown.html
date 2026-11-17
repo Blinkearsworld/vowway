@@ -9,6 +9,10 @@
 <style>
 @font-face{font-family:'Hand';src:url('caveat.woff2') format('woff2');font-weight:400 700;font-display:block}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,button{touch-action:manipulation}
+.btn:active{transform:scale(.97);opacity:.85}
+#leave{position:fixed;inset:0;z-index:20;background:#0E0D18;opacity:0;pointer-events:none;transition:opacity .25s ease}
+#leave.on{opacity:1;pointer-events:auto}
 html,body{margin:0;min-height:100vh;min-height:100lvh;background:#0E0D18;overflow:hidden;color:#EFE6D2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;overscroll-behavior:none}
 #room{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;object-fit:cover;object-position:50% 50%;transition:filter 1.2s ease,transform 1.2s ease;user-select:none;-webkit-user-drag:none}
 body.writing #room{filter:blur(6px) brightness(.55);transform:scale(1.04)}
@@ -55,6 +59,7 @@ body.writing #room{filter:blur(6px) brightness(.55);transform:scale(1.04)}
 <canvas id="glow"></canvas>
 <div id="sheetWrap"><div id="sheet"><textarea id="text" spellcheck="false" autocomplete="off" autocorrect="off" placeholder="Write what weighs on you.&#10;No one will read it.&#10;Nothing is saved."></textarea></div></div>
 <canvas id="fx"></canvas>
+<div id="leave"></div>
 
 <button class="close" id="close" aria-label="Close">×</button>
 <div class="ui top" id="topWrite"><div class="hint">Say it here. Then let it go.</div></div>
@@ -266,10 +271,15 @@ function reset(){
   ['topWrite','bottomWrite'].forEach(i => $(i).classList.remove('hidden'));
   layout(); place();
 }
-$('more').onclick = reset;
-const home = () => { location.href = './?from=setdown'; };
-$('again').onclick = home;
-$('close').onclick = () => { if (mode === 'table' && text.value.trim()) reset(); else home(); };
+const home = () => { $('leave').classList.add('on'); setTimeout(() => location.replace('./?from=setdown'), 60); };
+// one touch is enough: act when the finger lifts, not on a later click
+let quietUntil = 0;   // the click that follows a touch must not press whatever appears under the finger next
+document.addEventListener('click', e => { if (Date.now() < quietUntil) { e.stopPropagation(); e.preventDefault(); } }, true);
+const tap = (el, fn) => { const go = e => { if (Date.now() < quietUntil) return; quietUntil = Date.now() + 500; e.preventDefault(); fn(); };
+  el.addEventListener('pointerup', go); el.addEventListener('click', go); };
+tap($('more'), reset);
+tap($('again'), home);
+tap($('close'), () => { if (mode === 'table' && text.value.trim()) reset(); else home(); });
 
 layout(); place(); requestAnimationFrame(frame);
 </script>
