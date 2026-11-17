@@ -825,13 +825,20 @@ async function deriveKey(pin, salt){
 let S, pinKey = null, pinSalt = null, lockedBlob = null, lockErr = '';
 try { const raw = JSON.parse(localStorage.getItem(KEY));
   if (raw && raw.enc) { lockedBlob = raw; S = fresh(); } else S = raw ? Object.assign(fresh(), raw) : fresh(); } catch(e){ S = fresh(); }
+let saveSeq = 0, saveWarned = false;
+function saveFailed(){ if (!saveWarned) { saveWarned = true; try { toast('Couldn’t save on this phone. Storage may be full.'); } catch(e){} } }
 function save(){
-  if (lockedBlob) return;
+  if (lockedBlob) return Promise.resolve();
+  const seq = ++saveSeq;                       // only the newest save may write
   try {
-    if (pinKey) { const iv = crypto.getRandomValues(new Uint8Array(12)), snapshot = JSON.stringify(S);
-      crypto.subtle.encrypt({name:'AES-GCM', iv}, pinKey, TE.encode(snapshot)).then(ct => { try { localStorage.setItem(KEY, JSON.stringify({enc:1, salt:b64(pinSalt), iv:b64(iv), data:b64(ct)})); } catch(e){} }); }
-    else localStorage.setItem(KEY, JSON.stringify(S));
-  } catch(e){}
+    if (pinKey) { const iv = crypto.getRandomValues(new Uint8Array(12)), snapshot = JSON.stringify(S), key = pinKey, salt = pinSalt;
+      return crypto.subtle.encrypt({name:'AES-GCM', iv}, key, TE.encode(snapshot)).then(ct => {
+        if (seq !== saveSeq || pinKey !== key) return;   // a newer save, or the passcode was turned off meanwhile
+        try { localStorage.setItem(KEY, JSON.stringify({enc:1, salt:b64(salt), iv:b64(iv), data:b64(ct)})); saveWarned = false; } catch(e){ saveFailed(); }
+      }, () => saveFailed()); }
+    localStorage.setItem(KEY, JSON.stringify(S)); saveWarned = false;
+  } catch(e){ saveFailed(); }
+  return Promise.resolve();
 }
 async function unlock(pin){
   try { const salt = unb64(lockedBlob.salt), key = await deriveKey(pin, salt);
@@ -840,7 +847,7 @@ async function unlock(pin){
     render(); if (S.profile) arrive();
   } catch(e){ lockErr = 'That passcode didn’t work. Try again.'; render(); }
 }
-async function setPin(pin){ pinSalt = crypto.getRandomValues(new Uint8Array(16)); pinKey = await deriveKey(pin, pinSalt); save(); }
+async function setPin(pin){ pinSalt = crypto.getRandomValues(new Uint8Array(16)); pinKey = await deriveKey(pin, pinSalt); await save(); }
 function viewLock(){
   return `<div class="lockbox">${lampSVG(.8, 'lock', 4)}<h1>Your journal is locked</h1><p class="lede">Enter your passcode to open it.</p>
     <input type="password" id="pin" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="Passcode">
@@ -956,10 +963,17 @@ function moonTilt(d = new Date()){
   for (let h = .5; h <= 14; h += .5) for (const sgn of [-1, 1]) { const t = moonTiltAt(new Date(+d + sgn * h * 36e5)); if (t.alt > 20) return t.tilt; }
   return now.tilt;
 }
-function moonName(p = moonAge()){
-  return p < .034 || p > .966 ? 'New moon' : p < .216 ? 'Waxing crescent' : p < .284 ? 'First quarter' : p < .466 ? 'Waxing gibbous'
-    : p < .534 ? 'Full moon' : p < .716 ? 'Waning gibbous' : p < .784 ? 'Last quarter' : 'Waning crescent';
+/* the four main phases are named only on the day they happen where you are; the days between get the in-between names */
+function moonPhaseDay(target, d = new Date()){        // the moment the moon next/last reaches a phase (0 new, .25, .5, .75), refined a few times
+  let t = +d; for (let k = 0; k < 4; k++) { let dp = target - moonAge(new Date(t)); dp = ((dp + .5) % 1 + 1) % 1 - .5; t += dp * 29.530588853 * 864e5; }
+  return dk(new Date(t));
 }
+function moonName(p = moonAge(), d = new Date()){
+  const today = dk(d);
+  for (const [tg, nm] of [[0,'New moon'],[.25,'First quarter'],[.5,'Full moon'],[.75,'Last quarter']]) if (moonPhaseDay(tg, d) === today) return nm;
+  return p < .25 ? 'Waxing crescent' : p < .5 ? 'Waxing gibbous' : p < .75 ? 'Waning gibbous' : 'Waning crescent';
+}
+
 function moonHTML(){
   const p = moonAge(), k = Math.cos(2 * Math.PI * p), lit = (1 - k) / 2;
   if (lit < .025) return '';                      // new moon: only the stars tonight
@@ -1198,14 +1212,14 @@ function stepCard(j){
 function practiceCard(p){
   const t = TODAY(), kind = p.kind || 'do', pw = p.perWeek || 0, slips = p.slips || [], started = pStarted(p), done = pDone(p);
   const n = Math.max(0, pDay(p)), todayDone = p.checks.includes(t), slipped = slips.includes(t);
-  const label = !started ? `Starts ${fromKey(p.start).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}` : done ? 'Complete' : p.d ? `Day ${Math.min(n, p.d)} of ${p.d}` : `Day ${n}`;
+  const label = !started ? `Starts ${fromKey(p.start).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}` : done ? (p.checks.length >= p.d ? 'Kept' : 'Finished') : p.d ? `Day ${Math.min(n, p.d)} of ${p.d}` : `Day ${n}`;
   const tag = kind === 'quit' ? 'Giving something up' : pw ? `${pw} times a week` : 'Every day';
   let vis = '';
   if (p.d && p.d <= 31) vis = `<div class="dots" aria-label="${p.checks.length} of ${p.d} days">${Array.from({length:p.d}, (_,i) => { const k = add(p.start, i);
       return `<span class="dot ${p.checks.includes(k) ? 'done' : slips.includes(k) ? 'slip' : (k < t ? 'missed' : (k === t ? 'today' : ''))}" title="${shortDate(k)}"></span>`; }).join('')}</div>`;
   else if (started) { const pct = p.d ? Math.min(1, n / p.d) : ((n % 30) / 30);
     vis = `<div class="bar" aria-hidden="true"><i style="width:${(pct * 100).toFixed(1)}%"></i></div><p class="small">${p.checks.length} ${p.checks.length === 1 ? 'day' : 'days'} kept${slips.length ? ` · ${slips.length} ${slips.length === 1 ? 'slip' : 'slips'}, and still going` : ''}</p>`; }
-  const status = !started ? 'Your vow begins soon.' : done ? `Kept ${p.checks.length} of ${p.d} days` : pw ? `This week: ${vowWeekCount(p)} of ${pw}` :
+  const status = !started ? 'Your vow begins soon.' : done ? (p.checks.length >= p.d ? `Kept every day, ${p.d} of ${p.d}` : `Kept ${p.checks.length} of ${p.d} days`) : pw ? `This week: ${vowWeekCount(p)} of ${pw}` :
     kind === 'quit' ? (slipped ? 'A slip today. The vow goes on tomorrow.' : todayDone ? 'Kept today' : 'How did today go?') : (todayDone ? 'Kept today' : 'Not marked yet today');
   const nm = started && !done ? nextMilestone(p) : null;
   const btns = !started ? '' : done ? `<button class="link" data-act="removePractice" data-id="${p.id}">Remove</button>` :
@@ -1548,7 +1562,7 @@ function viewPath(){
     <div class="section-h" style="margin-top:6px"><h2>Your vows</h2>${active.length ? '<button class="link" data-act="newVow">+ New vow</button>' : ''}</div>
     ${active.map(practiceCard).join('') || `<section class="card quiet"><h3>No vow yet</h3><p class="small">A small promise to yourself.</p>
       <button class="btn glow wide" data-act="newVow" style="margin-top:6px">+ New vow</button></section>`}
-    ${past.length ? `<details class="roots"><summary>Kept vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}
+    ${past.length ? `<details class="roots"><summary>Finished vows (${past.length})</summary><div class="stack" style="margin-top:12px">${past.map(practiceCard).join('')}</div></details>` : ''}
   </div>`;
 }
 
