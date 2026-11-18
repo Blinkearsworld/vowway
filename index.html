@@ -2117,6 +2117,8 @@ function sheetPlayer(){
     <p class="eyebrow" id="pl-t">${esc(it.by)}</p><h2>${esc(it.t)}</h2>
     <div class="breath-wrap" style="height:190px"><div class="breath ${sil.running && sil.mode === 'silence' ? 'on' : ''}" style="width:180px;height:180px"></div>
       <div class="breath-center"><div class="breath-label" id="bl">${sil.running ? (sil.mode === 'sleep' ? 'Rest' : 'Breathe in') : 'Ready when you are'}</div><div class="time" id="tl">${mmss(sil.left)}</div></div></div>
+    ${(() => { const L = it.mode === 'sleep' ? [['ocean','Sea'],['rain','Rain'],['wind','Wind']] : [['none','None'],['music','Music'],['rain','Rain'],['ocean','Sea'],['wind','Wind'],['tone','Tone']];
+      return `<div><p class="opt-label">Sound</p><div class="chips">${L.map(([k,l]) => `<button class="chip" data-act="sound" data-k="${k}" aria-pressed="${sil.sound===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>`; })()}
     <button class="btn ${sil.running ? 'ghost' : 'glow'} wide" data-act="silToggle">${sil.running ? 'Stop' : 'Begin'}</button>
     <p class="small" style="text-align:center">${it.type === 'listen' ? 'Guided by an AI-generated voice.' : ''} ${it.mode === 'sleep' ? 'Keeps playing when your screen locks, then fades out.' : ''}</p>
     <button class="btn primary wide" data-act="closeSheet">Close</button></div>`, 'pl-t');
@@ -2380,7 +2382,7 @@ document.addEventListener('click', e => {
     case 'libTheme': libTheme = b.dataset.k; render(); break;
     case 'openItem': { const it = LIBRARY.find(i => i.id === b.dataset.id); if (!it) break;
       if (it.type === 'read') { stopReading(); readerId = it.id; sheet = 'reader'; renderSheet(); break; }
-      if (sil.running) silStop(false); setSil(it.mode, it.min, it.sound); sil.voice = it.type === 'listen'; sil.custom = it; sheet = 'player'; renderSheet(); break; }
+      if (sil.running) silStop(false); setSil(it.mode, it.min, (S.itemSound || {})[it.id] || it.sound); sil.voice = it.type === 'listen'; sil.custom = it; sheet = 'player'; renderSheet(); break; }
     case 'readAloud': { const it = LIBRARY.find(i => i.id === readerId);
       if (reading) { stopReading(); b.textContent = 'Listen'; }
       else if (it) startReading(it);
@@ -2443,7 +2445,7 @@ document.addEventListener('click', e => {
       Object.assign(vf, {title:'', kind:'do', pw:0, len:'7', num:'2', unit:'months', start:'today', date:''}); save(); sheet = null; pathView = 'vows'; tab = 'path'; render(); window.scrollTo(0,0); if (stepHook('practice', true)) { flow = {kind:'first', steps:['stone'], i:0, data:{}}; renderFlow(); } else toast('Vow made'); break; }
     case 'silMode': setSil(b.dataset.k, b.dataset.k === 'sleep' ? 20 : 3, b.dataset.k === 'sleep' ? 'ocean' : 'tone'); render(); break;
     case 'dur': sil.total = sil.left = +b.dataset.m * 60; render(); break;
-    case 'sound': sil.sound = b.dataset.k; render(); break;
+    case 'sound': sil.sound = b.dataset.k; if (sil.custom) { S.itemSound = {...(S.itemSound || {}), [sil.custom.id]: sil.sound}; save(); } render(); break;
     case 'silToggle': { const v = document.getElementById('voice'); if (v && !sil.running) sil.voice = v.checked; sil.running ? silStop(false) : silStart(); break; }
     case 'openLamp': sheet = 'lamp'; renderSheet(); setTimeout(() => { const i = document.getElementById('lampfor'); i && i.focus(); }, 300); break;
     case 'libMore': libAll.add(b.dataset.k); render(); break;
