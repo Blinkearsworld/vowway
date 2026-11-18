@@ -2235,7 +2235,7 @@ function silStart(){
     el.play().catch(() => { sil.el = null; sil.running = false; toast('Couldn’t start the sound. Tap Begin again.'); render(); });
     mediaMeta(sil.custom ? sil.custom.t : 'Sleep'); render();
     sil.iv = setInterval(() => { const e2 = Math.floor((Date.now() - sil.started) / 1000); sil.left = Math.max(0, sil.total - e2);
-      ['tl','tl2'].forEach(id => { const x = document.getElementById(id); if (x) x.textContent = mmss(sil.left); });
+      document.querySelectorAll('#tl,#tl2').forEach(x => x.textContent = mmss(sil.left));
       if (sil.left === 0) silStop(true); }, 500);
     return;
   }
@@ -2246,8 +2246,8 @@ function silStart(){
   if (sil.voice) script.forEach(([, line]) => voLoad(line));
   sil.iv = setInterval(() => {
     const el = Math.floor((Date.now() - sil.started) / 1000); sil.left = Math.max(0, sil.total - el);
-    ['tl','tl2'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = mmss(sil.left); });
-    const bl = document.getElementById('bl'); if (bl && sil.mode === 'silence') bl.textContent = (el % 10) < 4 ? 'Breathe in' : 'Breathe out';
+    document.querySelectorAll('#tl,#tl2').forEach(x => x.textContent = mmss(sil.left));
+    if (sil.mode === 'silence') document.querySelectorAll('#bl').forEach(b => b.textContent = (el % 10) < 4 ? 'Breathe in' : 'Breathe out');
     script.forEach(([at, line], i) => { if (el >= at && !sil.spoken.has(i)) { sil.spoken.add(i); speak(line); } });
     if (sil.mode === 'sleep' && sil.left <= 90 && !sil.fading) { sil.fading = true; soundFade(Math.max(5, sil.left)); }
     if (sil.left === 0) silStop(true);
