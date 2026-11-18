@@ -1500,7 +1500,7 @@ function viewSilence(){
   const sleep = sil.mode === 'sleep';
   const wk = S.silence.filter(s => diff(TODAY(), s.date) < 7).reduce((a,s) => a + s.min, 0);
   const durs = sleep ? [20] : [1,3,5,10];
-  const sounds = sleep ? [['ocean','Sea'],['rain','Rain'],['wind','Wind'],['night','Night music']] : [['none','None'],['music','Day music'],['night','Night music'],['tone','Tone'],['rain','Rain'],['ocean','Sea'],['wind','Wind']];
+  const sounds = sleep ? [['ocean','Sea'],['rain','Rain'],['wind','Wind'],['music','Music']] : [['none','None'],['music','Music'],['tone','Tone'],['rain','Rain'],['ocean','Sea'],['wind','Wind']];
   return `<div class="stack">
     ${sil.custom || sil.running ? '' : '<button class="link" data-act="quietBack" style="align-self:flex-start">‹ Quiet</button>'}
     ${sil.custom ? `<section class="greet"><p class="date">${esc(sil.custom.by)}</p><h1>${esc(sil.custom.t)}</h1><p class="lede">${sil.custom.type === 'listen' ? 'Press Begin, and let the voice guide you.' : 'Press Begin, and let the sound carry you.'}</p></section>` :
@@ -2131,7 +2131,7 @@ function sheetPlayer(){
     <p class="eyebrow" id="pl-t">${esc(it.by)}</p><h2>${esc(it.t)}</h2>
     <div class="breath-wrap" style="height:190px"><div class="breath ${sil.running && sil.mode === 'silence' ? 'on' : ''}" style="width:180px;height:180px"></div>
       <div class="breath-center"><div class="breath-label" id="bl">${sil.running ? (sil.mode === 'sleep' ? 'Rest' : 'Breathe in') : 'Ready when you are'}</div><div class="time" id="tl">${mmss(sil.left)}</div></div></div>
-    ${(() => { const L = it.mode === 'sleep' ? [['ocean','Sea'],['rain','Rain'],['wind','Wind'],['night','Night music']] : [['none','None'],['music','Day music'],['night','Night music'],['rain','Rain'],['ocean','Sea'],['wind','Wind'],['tone','Tone']];
+    ${(() => { const L = it.mode === 'sleep' ? [['ocean','Sea'],['rain','Rain'],['wind','Wind'],['music','Music']] : [['none','None'],['music','Music'],['rain','Rain'],['ocean','Sea'],['wind','Wind'],['tone','Tone']];
       return `<div><p class="opt-label">Sound</p><div class="chips">${L.map(([k,l]) => `<button class="chip" data-act="sound" data-k="${k}" aria-pressed="${sil.sound===k}" ${sil.running ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>`; })()}
     <button class="btn ${sil.running ? 'ghost' : 'glow'} wide" data-act="silToggle">${sil.running ? 'Stop' : 'Begin'}</button>
     <p class="small" style="text-align:center">${it.type === 'listen' ? 'Guided by an AI-generated voice.' : ''} ${it.mode === 'sleep' ? 'Keeps playing when your screen locks, then fades out.' : ''}</p>
@@ -2172,10 +2172,10 @@ function soundStart(kind){
     return;
   }
   /* real CC0 field recordings, looped without a seam; synthesized noise only if the file can't load */
-  sil.base = kind === 'music' || kind === 'night' ? .6 : .85; master.gain.linearRampToValueAtTime(sil.base, c.currentTime + 4);
+  sil.base = kind === 'music' ? .6 : .85; master.gain.linearRampToValueAtTime(sil.base, c.currentTime + 4);
   loopLoad(kind).then(buf => {
     if (sil.master !== master) return;
-    if (!buf && (kind === 'music' || kind === 'night')) return;
+    if (!buf && kind === 'music') return;
     if (!buf) { sil.base = kind === 'rain' ? .3 : .5; master.gain.cancelScheduledValues(c.currentTime); master.gain.linearRampToValueAtTime(sil.base, c.currentTime + 3); synthBed(c, kind, master); return; }
     const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = .06; src.loopEnd = buf.duration - .06; src.connect(master); src.start(0, .06); sil.nodes.push(src);
   });
@@ -2187,7 +2187,7 @@ function musicToggle(){
   const c = actx(); if (!c) return;
   if (bgm.on) { musicStop(); render(); return; }
   bgm.on = true; const g = c.createGain(); g.gain.setValueAtTime(0, c.currentTime); g.connect(c.destination); bgm.g = g; render();
-  loopLoad(isNight() ? 'night' : 'music').then(buf => {
+  loopLoad('music').then(buf => {
     if (bgm.g !== g) return;
     if (!buf) { bgm.on = false; bgm.g = null; toast('Couldn’t load the music.'); render(); return; }
     const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = .06; src.loopEnd = buf.duration - .06; src.connect(g); src.start(0, .06); bgm.src = src;
@@ -2238,8 +2238,8 @@ function ttsSpeak(text){
   if (!('speechSynthesis' in window)) return;
   try { const u = new SpeechSynthesisUtterance(text); u.rate = .82; u.pitch = .95; u.volume = .9; if (VOICE) u.voice = VOICE; u.onstart = () => duck(true); u.onend = () => duck(false); speechSynthesis.speak(u); } catch(e){}
 }
-const TRACK = {rain:'sounds/rain.mp3?v=2', ocean:'sounds/ocean.mp3?v=2', wind:'sounds/wind.mp3?v=2', night:'sounds/night.mp3?v=1'};
-const SLEEPTRACK = {rain:'sounds/sleep-rain.mp3?v=2', ocean:'sounds/sleep-ocean.mp3?v=2', wind:'sounds/sleep-wind.mp3?v=2', night:'sounds/sleep-night.mp3?v=1'};
+const TRACK = {rain:'sounds/rain.mp3?v=2', ocean:'sounds/ocean.mp3?v=2', wind:'sounds/wind.mp3?v=2', music:'sounds/music.mp3?v=1'};
+const SLEEPTRACK = {rain:'sounds/sleep-rain.mp3?v=2', ocean:'sounds/sleep-ocean.mp3?v=2', wind:'sounds/sleep-wind.mp3?v=2', music:'sounds/sleep-music.mp3?v=1'};
 function mediaMeta(title){ try { if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({title, artist:'vowway', artwork:[{src:'icon-512.png', sizes:'512x512', type:'image/png'}]});
   navigator.mediaSession.setActionHandler('pause', () => silStop(false)); navigator.mediaSession.setActionHandler('stop', () => silStop(false)); } } catch(e){} }
 function silStart(){
@@ -2398,7 +2398,7 @@ document.addEventListener('click', e => {
     case 'libTheme': libTheme = b.dataset.k; render(); break;
     case 'openItem': { const it = LIBRARY.find(i => i.id === b.dataset.id); if (!it) break;
       if (it.type === 'read') { stopReading(); readerId = it.id; sheet = 'reader'; renderSheet(); break; }
-      if (sil.running) silStop(false); setSil(it.mode, it.min, (S.itemSound || {})[it.id] || it.sound); sil.voice = it.type === 'listen'; sil.custom = it; sheet = 'player'; renderSheet(); break; }
+      if (sil.running) silStop(false); setSil(it.mode, it.min, ((S.itemSound || {})[it.id] || it.sound).replace('night', 'music')); sil.voice = it.type === 'listen'; sil.custom = it; sheet = 'player'; renderSheet(); break; }
     case 'readAloud': { const it = LIBRARY.find(i => i.id === readerId);
       if (reading) { stopReading(); b.textContent = 'Listen'; }
       else if (it) startReading(it);
